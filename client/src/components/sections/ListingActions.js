@@ -5,6 +5,7 @@ import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import Select from "@/components/ui/Select";
 import Textarea from "@/components/ui/Textarea";
+import { useSaved } from "@/components/providers/SavedProvider";
 
 const reasons = [
     { value: "spam", label: "Spam or fake listing" },
@@ -14,7 +15,8 @@ const reasons = [
 ];
 
 export default function ListingActions({ listing }) {
-    const [saved, setSaved] = useState(false);
+    const { isSaved, toggle } = useSaved();
+    const saved = isSaved(listing.id);
     const [contactOpen, setContactOpen] = useState(false);
     const [contactSent, setContactSent] = useState(false);
     const [reportOpen, setReportOpen] = useState(false);
@@ -39,7 +41,7 @@ export default function ListingActions({ listing }) {
                     size="lg"
                     variant="secondary"
                     aria-pressed={saved}
-                    onClick={() => setSaved((s) => !s)}
+                    onClick={() => toggle(listing.id)}
                 >
                     {saved ? "Saved" : "Save"}
                 </Button>

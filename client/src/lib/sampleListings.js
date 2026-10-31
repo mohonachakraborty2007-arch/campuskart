@@ -265,3 +265,10 @@ export function getSellerListings(id) {
     const sold = soldListings.filter((l) => l.sellerId === id);
     return { active, sold };
 }
+export function getAnyListing(id) {
+    return (
+        sampleListings.find((l) => l.id === id) ??
+        soldListings.find((l) => l.id === id) ??
+        null
+    );
+}

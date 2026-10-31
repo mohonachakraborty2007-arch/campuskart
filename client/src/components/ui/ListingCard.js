@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
+import { useSaved } from "@/components/providers/SavedProvider";
 import { categories } from "@/lib/sampleListings";
 
 const conditionStyles = {
@@ -10,8 +10,13 @@ const conditionStyles = {
     Fair: "text-warning border-warning/40",
 };
 
-export default function ListingCard({ listing, className = "" }) {
-    const [saved, setSaved] = useState(false);
+export default function ListingCard({
+    listing,
+    className = "",
+    onSavedChange,
+}) {
+    const { isSaved, toggle } = useSaved();
+    const saved = isSaved(listing.id);
     const categoryLabel =
         categories.find((c) => c.slug === listing.category)?.label ??
         listing.category;
@@ -22,6 +27,11 @@ export default function ListingCard({ listing, className = "" }) {
         >
             {/* image area, 4:3 */}
             <div className="relative aspect-[4/3] bg-surface-2">
+                {listing.sold && (
+                    <span className="absolute inset-x-0 bottom-0 z-[1] bg-background/90 py-1.5 text-center text-xs font-bold uppercase tracking-widest">
+                        Sold
+                    </span>
+                )}
                 {listing.image ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -59,7 +69,6 @@ export default function ListingCard({ listing, className = "" }) {
                             : `₹${listing.price.toLocaleString("en-IN")}`)}
                 </p>
                 <h3 className="line-clamp-2 text-base font-medium leading-snug text-foreground">
-                    {/* stretched link: the whole card is clickable */}
                     <Link
                         href={`/listings/${listing.id}`}
                         className="after:absolute after:inset-0 after:content-['']"
@@ -75,7 +84,10 @@ export default function ListingCard({ listing, className = "" }) {
             {/* heart, sits above the stretched link */}
             <button
                 type="button"
-                onClick={() => setSaved((s) => !s)}
+                onClick={() => {
+                    toggle(listing.id);
+                    onSavedChange?.(!saved);
+                }}
                 aria-pressed={saved}
                 aria-label={saved ? "Remove from saved" : "Save listing"}
                 className="absolute right-3 top-3 z-10 grid h-11 w-11 place-items-center rounded-full bg-background/80 backdrop-blur transition hover:bg-background"

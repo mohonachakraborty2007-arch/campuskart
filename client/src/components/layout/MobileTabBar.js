@@ -16,7 +16,7 @@ const tabs = [
     { href: "/", label: "Home", icon: "home" },
     { href: "/listings", label: "Browse", icon: "browse" },
     { href: "/sell", label: "Sell", icon: "sell" },
-    { href: "/saved", label: "Saved", icon: "saved" },
+    { href: "/wishlist", label: "Saved", icon: "saved" },
     { href: "/profile", label: "Profile", icon: "profile" },
 ];
 
