@@ -1,26 +1,117 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0A0A10;
+  --surface: #12141C;
+  --surface-2: #1A1D29;
+  --border: #2A2E42;
+  --foreground: #F4F5FA;
+  --muted: #9AA0B4;
+  --primary: #7C5CFF;
+  --accent: #22D3EE;
+  --pop: #C6FF3D;
+  --success: #34D399;
+  --warning: #FBBF24;
+  --danger: #F87171;
+  color-scheme: dark;
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-muted: var(--muted);
+  --color-primary: var(--primary);
+  --color-accent: var(--accent);
+  --color-pop: var(--pop);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-heading: var(--font-space-grotesk), system-ui, sans-serif;
+
+  --radius-button: 12px;
+  --radius-input: 12px;
+  --radius-card: 20px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  font-size: 16px;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-heading);
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* One-hue glow behind the hero: violet fading to nothing */
+.hero-glow {
+  background:
+    radial-gradient(60% 50% at 50% 0%, rgb(124 92 255 / 0.18), transparent 70%),
+    var(--background);
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* gentle floating motion for hero cards */
+@keyframes float-y {
+
+  0%,
+  100% {
+    translate: 0 0;
+  }
+
+  50% {
+    translate: 0 -10px;
+  }
+}
+
+.float-a {
+  animation: float-y 6s ease-in-out infinite;
+}
+
+.float-b {
+  animation: float-y 7s ease-in-out -2s infinite;
+}
+
+.float-c {
+  animation: float-y 8s ease-in-out -4s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .float-a,
+  .float-b,
+  .float-c {
+    animation: none;
+  }
 }
