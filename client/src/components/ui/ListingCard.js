@@ -53,7 +53,10 @@ export default function ListingCard({ listing, className = "" }) {
             {/* text area */}
             <div className="flex flex-1 flex-col gap-2 p-4">
                 <p className="font-heading text-xl font-bold text-foreground">
-                    ₹{listing.price.toLocaleString("en-IN")}
+                    {listing.priceLabel ??
+                        (listing.price === 0
+                            ? "Free"
+                            : `₹${listing.price.toLocaleString("en-IN")}`)}
                 </p>
                 <h3 className="line-clamp-2 text-base font-medium leading-snug text-foreground">
                     {/* stretched link: the whole card is clickable */}
