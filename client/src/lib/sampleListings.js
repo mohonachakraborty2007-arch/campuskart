@@ -193,3 +193,75 @@ export function getListing(id) {
     const extra = details[id];
     return { ...base, ...extra, seller: sellers[extra.sellerId] };
 }
+export const soldListings = [
+    {
+        id: "x1",
+        sellerId: "s1",
+        title: "Physics for Engineers, HC Verma",
+        price: 300,
+        condition: "Good",
+        category: "books",
+        location: "Main campus",
+        postedAgo: "Sold 2 weeks ago",
+        image: null,
+        sold: true,
+    },
+    {
+        id: "x2",
+        sellerId: "s1",
+        title: "Casio fx-82MS calculator",
+        price: 400,
+        condition: "Good",
+        category: "electronics",
+        location: "Block A",
+        postedAgo: "Sold 3 weeks ago",
+        image: null,
+        sold: true,
+    },
+    {
+        id: "x3",
+        sellerId: "s2",
+        title: "Wired earphones with mic",
+        price: 150,
+        condition: "Fair",
+        category: "electronics",
+        location: "Block C",
+        postedAgo: "Sold 1 month ago",
+        image: null,
+        sold: true,
+    },
+    {
+        id: "x4",
+        sellerId: "s3",
+        title: "Drafter and geometry box",
+        price: 250,
+        condition: "Like new",
+        category: "hostel",
+        location: "Boys hostel",
+        postedAgo: "Sold 1 month ago",
+        image: null,
+        sold: true,
+    },
+    {
+        id: "x5",
+        sellerId: "s4",
+        title: "Organic Chemistry notes, Sem 1",
+        price: 100,
+        condition: "Good",
+        category: "notes",
+        location: "Library",
+        postedAgo: "Sold 2 months ago",
+        image: null,
+        sold: true,
+    },
+];
+
+export function getSeller(id) {
+    return sellers[id] ?? null;
+}
+
+export function getSellerListings(id) {
+    const active = sampleListings.filter((l) => details[l.id]?.sellerId === id);
+    const sold = soldListings.filter((l) => l.sellerId === id);
+    return { active, sold };
+}
