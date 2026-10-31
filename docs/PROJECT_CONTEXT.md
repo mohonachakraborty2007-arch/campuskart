@@ -49,8 +49,8 @@ as a learning and portfolio project.
 
 ## Current status
 - [x] Phase 0
-- [ ] Phase 1: Environment, Git and GitHub
-- [ ] Phase 2: Project initialisation
+- [x] Phase 1: Environment, Git and GitHub
+- [x] Phase 2: Project initialisation
 - [ ] Phase 3
 - [ ] Phase 4
 - [ ] Phase 5
