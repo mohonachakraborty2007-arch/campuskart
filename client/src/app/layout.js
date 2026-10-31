@@ -2,6 +2,7 @@ import { Inter, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import MobileTabBar from "@/components/layout/MobileTabBar";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -34,6 +35,8 @@ export default function RootLayout({ children }) {
         <Navbar />
         <main id="main">{children}</main>
         <Footer />
+        <div className="h-16 md:hidden" aria-hidden="true" />
+        <MobileTabBar />
       </body>
     </html>
   );
