@@ -89,3 +89,107 @@ export const sampleListings = [
         image: null,
     },
 ];
+export const sellers = {
+    s1: {
+        id: "s1",
+        name: "Aarav S.",
+        department: "CSE, 2nd year",
+        verified: true,
+        memberSince: "Aug 2026",
+    },
+    s2: {
+        id: "s2",
+        name: "Riya D.",
+        department: "ECE, 3rd year",
+        verified: true,
+        memberSince: "Jul 2026",
+    },
+    s3: {
+        id: "s3",
+        name: "Kabir M.",
+        department: "Mechanical, 1st year",
+        verified: true,
+        memberSince: "Sep 2026",
+    },
+    s4: {
+        id: "s4",
+        name: "Ananya P.",
+        department: "Biotech, 2nd year",
+        verified: false,
+        memberSince: "Oct 2026",
+    },
+};
+
+const details = {
+    l1: {
+        sellerId: "s1",
+        description:
+            "Used for one semester. A few highlighted pages in the first three chapters, no torn pages. Solutions guide not included.",
+        pickup: "Library entrance, between 4 and 6 pm",
+        exchange: "Open to exchange for Physics or Chemistry books",
+        photos: 3,
+    },
+    l2: {
+        sellerId: "s3",
+        description:
+            "21-speed gears, new tyres fitted last month. Small scratch on the frame. Comes with a lock and a bell.",
+        pickup: "Boys hostel parking",
+        exchange: "Cash only",
+        photos: 4,
+    },
+    l3: {
+        sellerId: "s2",
+        description:
+            "Bought in January and barely used. Original cover included. Allowed in all internal exams.",
+        pickup: "Block A canteen",
+        exchange: "Cash only",
+        photos: 2,
+    },
+    l4: {
+        sellerId: "s4",
+        description:
+            "Neat handwritten notes for all first semester subjects, scanned copies also available on request.",
+        pickup: "Library reading room",
+        exchange: "Open to exchange for Sem 2 notes",
+        photos: 3,
+    },
+    l5: {
+        sellerId: "s4",
+        description:
+            "Works perfectly, three brightness levels and a USB port for charging a phone.",
+        pickup: "Girls hostel gate",
+        exchange: "Cash only",
+        photos: 2,
+    },
+    l6: {
+        sellerId: "s2",
+        description:
+            "Battery lasts about 6 hours. Ear tips are slightly worn, so I'm including a new set.",
+        pickup: "Block C entrance",
+        exchange: "Open to exchange for a power bank",
+        photos: 3,
+    },
+    l7: {
+        sellerId: "s3",
+        description:
+            "Size M, washed and ironed. Name tag removed. Used for one year in the chemistry lab.",
+        pickup: "Main gate",
+        exchange: "Cash only",
+        photos: 2,
+    },
+    l8: {
+        sellerId: "s1",
+        description:
+            "Some pencil marks inside, cover is slightly bent. All pages present.",
+        pickup: "Block B corridor",
+        exchange: "Open to exchange",
+        photos: 2,
+    },
+};
+
+export function getListing(id) {
+    const base = sampleListings.find((l) => l.id === id);
+    if (!base) return null;
+    const extra = details[id];
+    return { ...base, ...extra, seller: sellers[extra.sellerId] };
+}
