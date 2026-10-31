@@ -3,6 +3,7 @@ import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import MobileTabBar from "@/components/layout/MobileTabBar";
+import { AuthProvider } from "@/components/providers/AuthProvider";
 import { SavedProvider } from "@/components/providers/SavedProvider";
 
 const inter = Inter({
@@ -27,19 +28,21 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable}`}>
       <body>
-        <SavedProvider>
-          <a
-            href="#main"
-            className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-button focus:bg-primary focus:px-4 focus:py-2 focus:text-background"
-          >
-            Skip to content
-          </a>
-          <Navbar />
-          <main id="main">{children}</main>
-          <Footer />
-          <div className="h-16 md:hidden" aria-hidden="true" />
-          <MobileTabBar />
-        </SavedProvider>
+        <AuthProvider>
+          <SavedProvider>
+            <a
+              href="#main"
+              className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-button focus:bg-primary focus:px-4 focus:py-2 focus:text-background"
+            >
+              Skip to content
+            </a>
+            <Navbar />
+            <main id="main">{children}</main>
+            <Footer />
+            <div className="h-16 md:hidden" aria-hidden="true" />
+            <MobileTabBar />
+          </SavedProvider>
+        </AuthProvider>
       </body>
     </html>
   );

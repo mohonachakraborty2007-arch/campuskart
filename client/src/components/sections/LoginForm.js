@@ -8,10 +8,12 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import PasswordInput from "@/components/ui/PasswordInput";
 import { loginRequest } from "@/lib/authDemo";
+import { useAuth } from "@/components/providers/AuthProvider";
 import { COLLEGE_DOMAINS } from "@/lib/config";
 
 export default function LoginForm() {
     const router = useRouter();
+    const { signIn } = useAuth();
     const params = useSearchParams();
     const next = params.get("next");
     const destination = next && next.startsWith("/") ? next : "/listings";
@@ -52,6 +54,7 @@ export default function LoginForm() {
         setLoading(false);
 
         if (result.ok) {
+            signIn({ name: "Kabir M.", email: values.email.trim() });
             router.push(destination);
             return;
         }
