@@ -9,6 +9,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import Input from "@/components/ui/Input";
 import ListingCard from "@/components/ui/ListingCard";
 import Select from "@/components/ui/Select";
+import { useListingStatus } from "@/components/providers/ListingStatusProvider";
 import { categories, sampleListings } from "@/lib/sampleListings";
 
 const PAGE_SIZE = 6;
@@ -30,6 +31,7 @@ export default function BrowseView() {
     const router = useRouter();
     const params = useSearchParams();
     const [open, setOpen] = useState(false);
+    const { statusOf } = useListingStatus();
 
     const q = params.get("q") ?? "";
     const category = params.get("category") ?? "";
@@ -67,7 +69,11 @@ export default function BrowseView() {
     }
 
     // filter
-    const filtered = sampleListings.filter((l) => {
+    const all = sampleListings
+        .filter((l) => statusOf(l.id) !== "removed")
+        .map((l) => ({ ...l, sold: statusOf(l.id) === "sold" }));
+
+    const filtered = all.filter((l) => {
         if (category && l.category !== category) return false;
         if (condition && l.condition !== condition) return false;
         if (q && !l.title.toLowerCase().includes(q.toLowerCase())) return false;
@@ -223,8 +229,8 @@ export default function BrowseView() {
                             href={hrefWith({ page: n === 1 ? "" : String(n) })}
                             aria-current={n === current ? "page" : undefined}
                             className={`grid h-11 min-w-11 place-items-center rounded-button border px-3 text-sm font-medium transition ${n === current
-                                    ? "border-primary bg-primary text-background"
-                                    : "border-border text-muted hover:border-primary hover:text-foreground"
+                                ? "border-primary bg-primary text-background"
+                                : "border-border text-muted hover:border-primary hover:text-foreground"
                                 }`}
                         >
                             {n}

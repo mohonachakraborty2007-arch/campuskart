@@ -44,9 +44,9 @@ const fieldOrder = [
     "pickup",
 ];
 
-function validate(v) {
+function validate(v, existing = 0) {
     const e = {};
-    if (v.photos.length === 0) e.photos = "Add at least one photo.";
+    if (v.photos.length + existing === 0) e.photos = "Add at least one photo.";
     if (v.title.trim().length < 5)
         e.title = "Give your listing a title of at least 5 characters.";
     if (!v.category) e.category = "Choose a category.";
@@ -63,8 +63,10 @@ function validate(v) {
     return e;
 }
 
-export default function SellForm() {
-    const [values, setValues] = useState(empty);
+export default function SellForm({ initial, existingPhotos = 0, mode = "create" }) {
+    const [values, setValues] = useState(
+        initial ? { ...empty, ...initial } : empty
+    );
     const [errors, setErrors] = useState({});
     const [submitted, setSubmitted] = useState(false);
 
@@ -80,7 +82,7 @@ export default function SellForm() {
     function handleSubmit(e) {
         e.preventDefault();
         const form = e.currentTarget;
-        const found = validate(values);
+        const found = validate(values, existingPhotos);
         setErrors(found);
 
         const firstKey = fieldOrder.find((k) => found[k]);
@@ -108,7 +110,9 @@ export default function SellForm() {
     if (submitted) {
         return (
             <div className="rounded-card border border-border bg-surface px-6 py-14 text-center">
-                <h2 className="text-2xl font-bold">Listing ready</h2>
+                <h2 className="text-2xl font-bold">
+                    {mode === "edit" ? "Changes saved" : "Listing ready"}
+                </h2>
                 <p className="mx-auto mt-3 max-w-md text-muted">
                     Your form passed every check. This is a demo, so nothing is saved
                     until the backend is connected.
@@ -232,7 +236,7 @@ export default function SellForm() {
 
                 <div className="sticky bottom-[4.5rem] z-30 -mx-4 border-t border-border bg-background/95 px-4 py-3 backdrop-blur md:static md:mx-0 md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none">
                     <Button type="submit" size="lg" className="w-full sm:w-auto">
-                        Publish listing
+                        {mode === "edit" ? "Save changes" : "Publish listing"}
                     </Button>
                 </div>
             </form>

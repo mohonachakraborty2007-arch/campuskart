@@ -5,6 +5,7 @@ import Footer from "@/components/layout/Footer";
 import MobileTabBar from "@/components/layout/MobileTabBar";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { SavedProvider } from "@/components/providers/SavedProvider";
+import { ListingStatusProvider } from "@/components/providers/ListingStatusProvider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -30,17 +31,19 @@ export default function RootLayout({ children }) {
       <body>
         <AuthProvider>
           <SavedProvider>
-            <a
-              href="#main"
-              className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-button focus:bg-primary focus:px-4 focus:py-2 focus:text-background"
-            >
-              Skip to content
-            </a>
-            <Navbar />
-            <main id="main">{children}</main>
-            <Footer />
-            <div className="h-16 md:hidden" aria-hidden="true" />
-            <MobileTabBar />
+            <ListingStatusProvider>
+              <a
+                href="#main"
+                className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-button focus:bg-primary focus:px-4 focus:py-2 focus:text-background"
+              >
+                Skip to content
+              </a>
+              <Navbar />
+              <main id="main">{children}</main>
+              <Footer />
+              <div className="h-16 md:hidden" aria-hidden="true" />
+              <MobileTabBar />
+            </ListingStatusProvider>
           </SavedProvider>
         </AuthProvider>
       </body>

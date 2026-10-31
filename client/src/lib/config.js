@@ -8,3 +8,5 @@ export function isCollegeEmail(email) {
     const domain = value.slice(at + 1);
     return COLLEGE_DOMAINS.some((d) => domain === d || domain.endsWith(`.${d}`));
 }
+// DEMO ONLY: the seller we pretend is logged in. Replaced by the real session.
+export const DEMO_OWNER_ID = "s3";

@@ -17,7 +17,7 @@ const tabs = [
     { href: "/listings", label: "Browse", icon: "browse" },
     { href: "/sell", label: "Sell", icon: "sell" },
     { href: "/wishlist", label: "Saved", icon: "saved" },
-    { href: "/profile", label: "Profile", icon: "profile" },
+    { href: "/my-listings", label: "Account", icon: "profile" },
 ];
 
 export default function MobileTabBar() {
