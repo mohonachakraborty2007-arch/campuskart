@@ -1,18 +1,18 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0A0A10;
-  --surface: #12141C;
-  --surface-2: #1A1D29;
-  --border: #2A2E42;
-  --foreground: #F4F5FA;
-  --muted: #9AA0B4;
-  --primary: #7C5CFF;
-  --accent: #22D3EE;
-  --pop: #C6FF3D;
-  --success: #34D399;
-  --warning: #FBBF24;
-  --danger: #F87171;
+  --background: #0a0a10;
+  --surface: #12141c;
+  --surface-2: #1a1d29;
+  --border: #2a2e42;
+  --foreground: #f4f5fa;
+  --muted: #9aa0b4;
+  --primary: #7c5cff;
+  --accent: #22d3ee;
+  --pop: #c6ff3d;
+  --success: #34d399;
+  --warning: #fbbf24;
+  --danger: #f87171;
   color-scheme: dark;
 }
 
@@ -30,23 +30,19 @@
   --color-warning: var(--warning);
   --color-danger: var(--danger);
 
-  --font-sans: var(--font-inter), system-ui, sans-serif;
-  --font-heading: var(--font-space-grotesk), system-ui, sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-space-grotesk), ui-sans-serif, system-ui,
+    sans-serif;
 
   --radius-button: 12px;
   --radius-input: 12px;
   --radius-card: 20px;
 }
 
-html {
-  font-size: 16px;
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
-  line-height: 1.6;
 }
 
 h1,
@@ -55,19 +51,11 @@ h3,
 h4 {
   font-family: var(--font-heading);
   letter-spacing: -0.02em;
-  line-height: 1.15;
 }
 
 :focus-visible {
   outline: 2px solid var(--accent);
-  outline-offset: 3px;
-}
-
-/* One-hue glow behind the hero: violet fading to nothing */
-.hero-glow {
-  background:
-    radial-gradient(60% 50% at 50% 0%, rgb(124 92 255 / 0.18), transparent 70%),
-    var(--background);
+  outline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -107,15 +95,6 @@ h4 {
   animation: float-y 8s ease-in-out -4s infinite;
 }
 
-@media (prefers-reduced-motion: reduce) {
-
-  .float-a,
-  .float-b,
-  .float-c {
-    animation: none;
-  }
-}
-
 /* checkmark that draws itself on the verified screen */
 @keyframes draw-check {
   to {
@@ -127,4 +106,141 @@ h4 {
   stroke-dasharray: 30;
   stroke-dashoffset: 30;
   animation: draw-check 0.5s ease-out 0.2s forwards;
+}
+
+/* the tag that travels between seller and buyer on the About page */
+@keyframes tag-ride {
+  from {
+    left: 0;
+  }
+
+  to {
+    left: calc(100% - 3.25rem);
+  }
+}
+
+.tag-ride {
+  animation: tag-ride 4s ease-in-out infinite alternate;
+}
+
+/* About page: scrolling strip and the underline that draws itself */
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.marquee-track {
+  animation: marquee 32s linear infinite;
+}
+
+.marquee-track:hover {
+  animation-play-state: paused;
+}
+
+@keyframes underline-grow {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.underline-grow {
+  transform-origin: left;
+  animation: underline-grow 0.7s ease-out 0.5s both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .marquee-track,
+  .underline-grow {
+    animation: none;
+  }
+}
+
+/* wavy underline that draws itself */
+@keyframes squiggle-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.squiggle-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: squiggle-draw 1s ease-out 0.5s forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .squiggle-draw {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
+
+/* drifting violet orbs behind the landing hero */
+@keyframes orb-a {
+
+  0%,
+  100% {
+    translate: 0 0;
+    scale: 1;
+  }
+
+  50% {
+    translate: -60px 50px;
+    scale: 1.15;
+  }
+}
+
+@keyframes orb-b {
+
+  0%,
+  100% {
+    translate: 0 0;
+    scale: 1;
+  }
+
+  50% {
+    translate: 80px -40px;
+    scale: 1.2;
+  }
+}
+
+@keyframes orb-c {
+
+  0%,
+  100% {
+    translate: 0 0;
+    scale: 1;
+  }
+
+  50% {
+    translate: -40px -60px;
+    scale: 0.9;
+  }
+}
+
+.orb-a {
+  animation: orb-a 14s ease-in-out infinite;
+}
+
+.orb-b {
+  animation: orb-b 18s ease-in-out infinite;
+}
+
+.orb-c {
+  animation: orb-c 16s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .orb-a,
+  .orb-b,
+  .orb-c {
+    animation: none;
+  }
 }

@@ -10,3 +10,5 @@ export function isCollegeEmail(email) {
 }
 // DEMO ONLY: the seller we pretend is logged in. Replaced by the real session.
 export const DEMO_OWNER_ID = "s3";
+// Change this to the email you want students to write to.
+export const CONTACT_EMAIL = "hello@campuskart.example";

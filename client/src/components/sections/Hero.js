@@ -1,42 +1,63 @@
 import Button from "@/components/ui/Button";
 import HeroCards from "@/components/sections/HeroCards";
 
-const facts = [
-    "Students only",
-    "Meet on campus",
-    "Free to list",
-];
+const facts = ["Students only", "Meet on campus", "Free to list"];
+
+// How dark the layer on top of the video is (0 to 1). Raise it if text is hard to read.
+const OVERLAY = 0.55;
 
 export default function Hero() {
     return (
         <section className="relative isolate overflow-hidden border-b border-border">
-            {/* faint dot grid, fades out toward the bottom */}
-            <div
+            {/* animated video background, hidden for people who prefer reduced motion */}
+            <video
                 aria-hidden="true"
-                className="absolute inset-0 -z-10"
-                style={{
-                    backgroundImage:
-                        "radial-gradient(rgba(244,245,250,0.09) 1px, transparent 1px)",
-                    backgroundSize: "26px 26px",
-                    maskImage:
-                        "linear-gradient(to bottom, black 40%, transparent 100%)",
-                    WebkitMaskImage:
-                        "linear-gradient(to bottom, black 40%, transparent 100%)",
-                }}
+                className="absolute inset-0 -z-30 h-full w-full object-cover motion-reduce:hidden"
+                src="/hero-bg.mp4"
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="metadata"
             />
-            {/* one-colour violet glow */}
+
+            {/* dark layer so the text always stays readable */}
             <div
                 aria-hidden="true"
-                className="absolute -top-40 right-[-10%] -z-10 h-[520px] w-[520px] rounded-full"
+                className="absolute inset-0 -z-20 bg-background"
+                style={{ opacity: OVERLAY }}
+            />
+
+            {/* stronger one-colour violet glows */}
+            <div
+                aria-hidden="true"
+                className="absolute -top-40 right-[-10%] -z-10 h-[640px] w-[640px] rounded-full"
                 style={{
                     background:
-                        "radial-gradient(circle, rgba(124,92,255,0.28) 0%, rgba(124,92,255,0) 65%)",
+                        "radial-gradient(circle, rgba(124,92,255,0.5) 0%, rgba(124,92,255,0) 65%)",
+                }}
+            />
+            <div
+                aria-hidden="true"
+                className="absolute -bottom-48 left-[-10%] -z-10 h-[560px] w-[560px] rounded-full"
+                style={{
+                    background:
+                        "radial-gradient(circle, rgba(124,92,255,0.32) 0%, rgba(124,92,255,0) 65%)",
+                }}
+            />
+
+            {/* fade into the page background at the bottom */}
+            <div
+                aria-hidden="true"
+                className="absolute inset-x-0 bottom-0 -z-10 h-32"
+                style={{
+                    background: "linear-gradient(to bottom, transparent, var(--background))",
                 }}
             />
 
             <div className="mx-auto grid max-w-[1200px] items-center gap-12 px-4 py-20 md:px-6 md:py-28 lg:grid-cols-[1.1fr_0.9fr]">
                 <div>
-                    <p className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1 text-sm text-muted">
+                    <p className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/80 px-3 py-1 text-sm text-muted backdrop-blur">
                         <span className="h-2 w-2 rounded-full bg-pop" />
                         Student-only marketplace
                     </p>
@@ -53,7 +74,7 @@ export default function Hero() {
                         .
                     </h1>
 
-                    <p className="mt-6 max-w-xl text-lg text-muted">
+                    <p className="mt-6 max-w-xl text-lg text-foreground/80">
                         Used books, cycles, notes and electronics from students you can
                         actually meet. No shipping, no strangers, no scams.
                     </p>
@@ -67,7 +88,7 @@ export default function Hero() {
                         </Button>
                     </div>
 
-                    <ul className="mt-10 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted">
+                    <ul className="mt-10 flex flex-wrap gap-x-6 gap-y-2 text-sm text-foreground/80">
                         {facts.map((fact) => (
                             <li key={fact} className="flex items-center gap-2">
                                 <span className="h-1.5 w-1.5 rounded-full bg-accent" />
