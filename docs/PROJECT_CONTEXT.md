@@ -51,7 +51,7 @@ as a learning and portfolio project.
 - [x] Phase 0
 - [x] Phase 1: Environment, Git and GitHub
 - [x] Phase 2: Project initialisation
-- [ ] Phase 3
+- [x] Phase 3: UI (all pages on sample data)
 - [ ] Phase 4
 - [ ] Phase 5
 - [ ] Phase 6
