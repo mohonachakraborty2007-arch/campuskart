@@ -54,7 +54,7 @@ export default function LoginForm() {
         setLoading(false);
 
         if (result.ok) {
-            signIn({ name: "Kabir M.", email: values.email.trim() });
+            signIn(result.user);
             router.push(destination);
             return;
         }

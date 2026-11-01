@@ -76,6 +76,14 @@ function AccountMenu({ user, onSignOut, pathname }) {
                     <Link href="/wishlist" className={itemClass}>
                         Saved items
                     </Link>
+                    {user.role === "admin" && (
+                        <Link href="/admin/reports" className={itemClass}>
+                            Admin reports
+                        </Link>
+                    )}
+                    <Link href="/settings" className={itemClass}>
+                        Settings
+                    </Link>
                     <button
                         type="button"
                         onClick={onSignOut}
@@ -127,8 +135,8 @@ export default function Navbar() {
                                         href={link.href}
                                         aria-current={active ? "page" : undefined}
                                         className={`inline-flex min-h-10 items-center gap-2 rounded-full px-4 text-sm font-medium transition ${active
-                                                ? "bg-surface text-foreground"
-                                                : "text-muted hover:bg-surface hover:text-foreground"
+                                            ? "bg-surface text-foreground"
+                                            : "text-muted hover:bg-surface hover:text-foreground"
                                             }`}
                                     >
                                         {link.label}

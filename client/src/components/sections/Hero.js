@@ -1,58 +1,24 @@
 import Button from "@/components/ui/Button";
 import HeroCards from "@/components/sections/HeroCards";
+import KineticGrid from "@/components/ui/KineticGrid";
 
 const facts = ["Students only", "Meet on campus", "Free to list"];
 
-// How dark the layer on top of the video is (0 to 1). Raise it if text is hard to read.
-const OVERLAY = 0.55;
-
 export default function Hero() {
     return (
-        <section className="relative isolate overflow-hidden border-b border-border">
-            {/* animated video background, hidden for people who prefer reduced motion */}
-            <video
-                aria-hidden="true"
-                className="absolute inset-0 -z-30 h-full w-full object-cover motion-reduce:hidden"
-                src="/hero-bg.mp4"
-                autoPlay
-                muted
-                loop
-                playsInline
-                preload="metadata"
-            />
-
-            {/* dark layer so the text always stays readable */}
+        <KineticGrid className="border-b border-border">
+            {/* drifting violet orbs (behind the interactive grid) */}
             <div
                 aria-hidden="true"
-                className="absolute inset-0 -z-20 bg-background"
-                style={{ opacity: OVERLAY }}
-            />
-
-            {/* stronger one-colour violet glows */}
-            <div
-                aria-hidden="true"
-                className="absolute -top-40 right-[-10%] -z-10 h-[640px] w-[640px] rounded-full"
-                style={{
-                    background:
-                        "radial-gradient(circle, rgba(124,92,255,0.5) 0%, rgba(124,92,255,0) 65%)",
-                }}
+                className="orb-a absolute -top-32 right-[-8%] -z-20 h-[620px] w-[620px] rounded-full bg-primary/40 blur-3xl"
             />
             <div
                 aria-hidden="true"
-                className="absolute -bottom-48 left-[-10%] -z-10 h-[560px] w-[560px] rounded-full"
-                style={{
-                    background:
-                        "radial-gradient(circle, rgba(124,92,255,0.32) 0%, rgba(124,92,255,0) 65%)",
-                }}
+                className="orb-b absolute bottom-[-200px] left-[-10%] -z-20 h-[520px] w-[520px] rounded-full bg-primary/30 blur-3xl"
             />
-
-            {/* fade into the page background at the bottom */}
             <div
                 aria-hidden="true"
-                className="absolute inset-x-0 bottom-0 -z-10 h-32"
-                style={{
-                    background: "linear-gradient(to bottom, transparent, var(--background))",
-                }}
+                className="orb-c absolute left-[35%] top-[8%] -z-20 h-[360px] w-[360px] rounded-full bg-primary/20 blur-3xl"
             />
 
             <div className="mx-auto grid max-w-[1200px] items-center gap-12 px-4 py-20 md:px-6 md:py-28 lg:grid-cols-[1.1fr_0.9fr]">
@@ -100,6 +66,6 @@ export default function Hero() {
 
                 <HeroCards />
             </div>
-        </section>
+        </KineticGrid>
     );
 }

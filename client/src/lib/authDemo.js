@@ -10,9 +10,20 @@ export async function loginRequest({ email, password }) {
   const e = email.trim().toLowerCase();
 
   if (failures >= 5) return { ok: false, code: "locked" };
+
   if (e === `demo@${domain}` && password === "demo1234") {
     failures = 0;
-    return { ok: true };
+    return {
+      ok: true,
+      user: { name: "Kabir M.", email: e, role: "user" },
+    };
+  }
+  if (e === `admin@${domain}` && password === "admin1234") {
+    failures = 0;
+    return {
+      ok: true,
+      user: { name: "Admin", email: e, role: "admin" },
+    };
   }
   if (e === `new@${domain}`) return { ok: false, code: "unverified" };
 
