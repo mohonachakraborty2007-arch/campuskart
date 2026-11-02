@@ -6,6 +6,7 @@ import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import PasswordInput from "@/components/ui/PasswordInput";
+import { api } from "@/lib/api";
 import { COLLEGE_DOMAINS, isCollegeEmail } from "@/lib/config";
 
 function strength(p) {
@@ -39,6 +40,7 @@ export default function RegisterForm() {
     const router = useRouter();
     const [values, setValues] = useState({ name: "", email: "", password: "" });
     const [errors, setErrors] = useState({});
+    const [notice, setNotice] = useState(null);
     const [loading, setLoading] = useState(false);
 
     function set(key, value) {
@@ -50,9 +52,11 @@ export default function RegisterForm() {
         });
     }
 
-    function handleSubmit(e) {
+    async function handleSubmit(e) {
         e.preventDefault();
         const form = e.currentTarget;
+        setNotice(null);
+
         const found = validate(values);
         setErrors(found);
 
@@ -62,13 +66,38 @@ export default function RegisterForm() {
             return;
         }
 
-        // Demo only: the real request to the API comes in the backend phase.
         setLoading(true);
-        setTimeout(() => {
+        try {
+            await api("/auth/register", {
+                method: "POST",
+                body: {
+                    name: values.name.trim(),
+                    email: values.email.trim(),
+                    password: values.password,
+                },
+            });
             router.push(
-                `/verify-email?email=${encodeURIComponent(values.email.trim())}`
+                `/verify-email?email=${encodeURIComponent(values.email.trim())}&fresh=1`
             );
-        }, 800);
+        } catch (err) {
+            if (err.code === "EMAIL_TAKEN") {
+                setErrors({
+                    email: "An account with this email already exists. Try logging in.",
+                });
+                form.elements.namedItem("email")?.focus();
+            } else if (err.code === "VALIDATION_ERROR" && err.fields) {
+                setErrors(err.fields);
+            } else if (err.code === "RATE_LIMITED") {
+                setNotice({
+                    title: "Too many attempts",
+                    body: "Please wait 15 minutes before trying again.",
+                });
+            } else {
+                setNotice({ title: "Could not create your account.", body: err.message });
+            }
+        } finally {
+            setLoading(false);
+        }
     }
 
     const score = strength(values.password);
@@ -76,6 +105,11 @@ export default function RegisterForm() {
 
     return (
         <form onSubmit={handleSubmit} noValidate className="space-y-4">
+            {notice && (
+                <Alert tone="error" title={notice.title}>
+                    {notice.body}
+                </Alert>
+            )}
             {hasErrors && (
                 <Alert tone="error" title="Please fix the highlighted fields." />
             )}

@@ -7,9 +7,8 @@ import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import PasswordInput from "@/components/ui/PasswordInput";
-import { loginRequest } from "@/lib/authDemo";
+import { api } from "@/lib/api";
 import { useAuth } from "@/components/providers/AuthProvider";
-import { COLLEGE_DOMAINS } from "@/lib/config";
 
 export default function LoginForm() {
     const router = useRouter();
@@ -50,29 +49,38 @@ export default function LoginForm() {
         }
 
         setLoading(true);
-        const result = await loginRequest(values);
-        setLoading(false);
-
-        if (result.ok) {
-            signIn(result.user);
+        try {
+            const data = await api("/auth/login", {
+                method: "POST",
+                body: { email: values.email.trim(), password: values.password },
+            });
+            signIn(data.user);
             router.push(destination);
-            return;
-        }
-        if (result.code === "unverified") {
-            setNotice({ tone: "info", code: "unverified" });
-        } else if (result.code === "locked") {
-            setNotice({
-                tone: "error",
-                title: "Too many attempts",
-                body: "Please wait 15 minutes before trying again.",
-            });
-        } else {
-            // Same message whether the email exists or not, on purpose.
-            setNotice({
-                tone: "error",
-                title: "Incorrect email or password.",
-                body: "Check your details and try again.",
-            });
+        } catch (err) {
+            if (err.code === "EMAIL_NOT_VERIFIED") {
+                setNotice({ tone: "info", code: "unverified" });
+            } else if (err.code === "RATE_LIMITED") {
+                setNotice({
+                    tone: "error",
+                    title: "Too many attempts",
+                    body: "Please wait 15 minutes before trying again.",
+                });
+            } else if (err.code === "INVALID_CREDENTIALS") {
+                // Same message whether the email exists or not, on purpose.
+                setNotice({
+                    tone: "error",
+                    title: "Incorrect email or password.",
+                    body: "Check your details and try again.",
+                });
+            } else {
+                setNotice({
+                    tone: "error",
+                    title: "Could not log in.",
+                    body: err.message,
+                });
+            }
+        } finally {
+            setLoading(false);
         }
     }
 
@@ -118,13 +126,6 @@ export default function LoginForm() {
             <Button type="submit" size="lg" loading={loading} className="w-full">
                 Log in
             </Button>
-
-            {process.env.NODE_ENV !== "production" && (
-                <Alert tone="info" title="Demo login (dev only)">
-                    demo@{COLLEGE_DOMAINS[0]} / demo1234. Use new@{COLLEGE_DOMAINS[0]}{" "}
-                    to see the unverified state.
-                </Alert>
-            )}
         </form>
     );
 }

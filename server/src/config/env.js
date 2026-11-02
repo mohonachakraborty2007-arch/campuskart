@@ -23,7 +23,16 @@ if (!result.success) {
     process.exit(1);
 }
 
-export const env = result.data;
+// Turns "...mongodb.net//campuskart" into "...mongodb.net/campuskart"
+function cleanMongoUri(uri) {
+    return uri.trim().replace(/^(mongodb(?:\+srv)?:\/\/[^/]+)\/{2,}/, '$1/');
+}
+
+export const env = {
+    ...result.data,
+    MONGODB_URI: cleanMongoUri(result.data.MONGODB_URI),
+    MONGODB_URI_TEST: cleanMongoUri(result.data.MONGODB_URI_TEST),
+};
 
 export const allowedEmailDomains = env.ALLOWED_EMAIL_DOMAINS
     .split(',')

@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import AuthShell from "@/components/layout/AuthShell";
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
+import { api } from "@/lib/api";
 
-const COOLDOWN = 30;
+const COOLDOWN = 60;
 
 function IconCircle({ children }) {
     return (
@@ -18,13 +20,30 @@ function IconCircle({ children }) {
 }
 
 export default function VerifyEmailView() {
-    const router = useRouter();
     const params = useSearchParams();
-    const status = params.get("status");
-    const email = params.get("email") ?? "";
+    const token = params.get("token");
+    const emailParam = params.get("email") ?? "";
+    const fresh = params.get("fresh") === "1";
 
-    const [seconds, setSeconds] = useState(COOLDOWN);
+    const [phase, setPhase] = useState(token ? "verifying" : "waiting");
+    const [email, setEmail] = useState(emailParam);
+    const [seconds, setSeconds] = useState(fresh ? COOLDOWN : 0);
     const [sent, setSent] = useState(false);
+    const [sending, setSending] = useState(false);
+    const [error, setError] = useState("");
+    const ranRef = useRef(false);
+
+    // Arrived from the email link: confirm the token with the server (once).
+    useEffect(() => {
+        if (!token || ranRef.current) return;
+        ranRef.current = true;
+        api("/auth/verify-email", { method: "POST", body: { token } })
+            .then(() => setPhase("success"))
+            .catch((err) => {
+                setError(err.code === "INVALID_TOKEN" ? "" : err.message);
+                setPhase("expired");
+            });
+    }, [token]);
 
     useEffect(() => {
         if (seconds <= 0) return;
@@ -32,32 +51,54 @@ export default function VerifyEmailView() {
         return () => clearTimeout(timer);
     }, [seconds]);
 
-    function resend() {
-        setSent(true);
-        setSeconds(COOLDOWN);
+    async function resend(e) {
+        e?.preventDefault();
+        const address = email.trim();
+        if (!/^\S+@\S+\.\S+$/.test(address)) {
+            setError("Enter the email you signed up with.");
+            return;
+        }
+        setSending(true);
+        setError("");
+        try {
+            await api("/auth/resend-verification", {
+                method: "POST",
+                body: { email: address },
+            });
+            setSent(true);
+            setSeconds(COOLDOWN);
+            setPhase("waiting");
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setSending(false);
+        }
     }
 
-    const devLinks = process.env.NODE_ENV !== "production" && (
-        <p className="mt-6 text-center text-xs text-muted">
-            Dev only:{" "}
-            <Link
-                href={`/verify-email?status=success`}
-                className="underline-offset-4 hover:underline"
-            >
-                see verified
-            </Link>{" "}
-            ·{" "}
-            <Link
-                href={`/verify-email?status=expired&email=${encodeURIComponent(email)}`}
-                className="underline-offset-4 hover:underline"
-            >
-                see expired
-            </Link>
-        </p>
+    const emailField = !emailParam && (
+        <div className="mt-5 text-left">
+            <Input
+                label="Your college email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+            />
+        </div>
     );
 
-    // verified
-    if (status === "success") {
+    if (phase === "verifying") {
+        return (
+            <AuthShell title="Verifying your email" subtitle="One moment...">
+                <p className="text-muted" aria-live="polite">
+                    Checking your link.
+                </p>
+            </AuthShell>
+        );
+    }
+
+    if (phase === "success") {
         return (
             <AuthShell
                 title="Email verified"
@@ -82,40 +123,34 @@ export default function VerifyEmailView() {
         );
     }
 
-    // expired or invalid link
-    if (status === "expired") {
+    if (phase === "expired") {
         return (
             <AuthShell
                 title="Link expired"
                 subtitle="Verification links only work for 24 hours."
             >
-                <Alert tone="error" title="This link has expired or is invalid.">
+                <Alert tone="error" title={error || "This link has expired or is invalid."}>
                     Request a new one and we will email it right away.
                 </Alert>
+                {emailField}
                 <Button
                     size="lg"
                     className="mt-5 w-full"
-                    onClick={() =>
-                        router.replace(
-                            email
-                                ? `/verify-email?email=${encodeURIComponent(email)}`
-                                : "/verify-email"
-                        )
-                    }
+                    loading={sending}
+                    onClick={resend}
                 >
                     Send a new link
                 </Button>
-                {devLinks}
             </AuthShell>
         );
     }
 
-    // waiting for the student to click the link
+    // waiting for the student to click the link in their inbox
     return (
         <AuthShell
             title="Check your inbox"
             subtitle={
-                email
+                emailParam
                     ? undefined
                     : "We sent a verification link to your college email."
             }
@@ -145,10 +180,10 @@ export default function VerifyEmailView() {
                 </svg>
             </IconCircle>
 
-            {email && (
+            {emailParam && (
                 <p className="text-muted">
                     We sent a verification link to{" "}
-                    <strong className="break-all text-foreground">{email}</strong>.
+                    <strong className="break-all text-foreground">{emailParam}</strong>.
                 </p>
             )}
             <p className="mt-3 text-muted">
@@ -161,17 +196,24 @@ export default function VerifyEmailView() {
                     A new link is on its way.
                 </Alert>
             )}
+            {error && (
+                <Alert tone="error" className="mt-5">
+                    {error}
+                </Alert>
+            )}
+
+            {emailField}
 
             <Button
                 size="lg"
                 variant="secondary"
                 className="mt-5 w-full"
-                disabled={seconds > 0}
+                disabled={seconds > 0 || sending}
+                loading={sending}
                 onClick={resend}
             >
                 {seconds > 0 ? `Resend in ${seconds}s` : "Resend email"}
             </Button>
-            {devLinks}
         </AuthShell>
     );
 }

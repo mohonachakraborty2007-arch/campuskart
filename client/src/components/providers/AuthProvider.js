@@ -8,40 +8,47 @@ import {
     useMemo,
     useState,
 } from "react";
+import { api } from "@/lib/api";
 
-const KEY = "campuskart-user";
 const AuthContext = createContext(null);
 
-// DEMO ONLY. Replaced by the real session cookie in the backend phase.
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
     const [ready, setReady] = useState(false);
 
+    // Ask the server who is logged in (it reads the httpOnly cookie).
     useEffect(() => {
+        let cancelled = false;
         try {
-            const raw = localStorage.getItem(KEY);
-            if (raw) setUser(JSON.parse(raw));
+            localStorage.removeItem("campuskart-user"); // old demo login
         } catch {
-            // storage can be blocked; the app still works as logged out
+            // ignore
         }
-        setReady(true);
+        api("/auth/me")
+            .then((data) => {
+                if (!cancelled) setUser(data.user);
+            })
+            .catch(() => {
+                if (!cancelled) setUser(null);
+            })
+            .finally(() => {
+                if (!cancelled) setReady(true);
+            });
+        return () => {
+            cancelled = true;
+        };
     }, []);
 
     const signIn = useCallback((nextUser) => {
         setUser(nextUser);
-        try {
-            localStorage.setItem(KEY, JSON.stringify(nextUser));
-        } catch {
-            // ignore
-        }
     }, []);
 
-    const signOut = useCallback(() => {
+    const signOut = useCallback(async () => {
         setUser(null);
         try {
-            localStorage.removeItem(KEY);
+            await api("/auth/logout", { method: "POST" });
         } catch {
-            // ignore
+            // the cookie will simply expire on its own
         }
     }, []);
 
