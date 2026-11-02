@@ -12,13 +12,15 @@ function escapeHtml(text) {
 export async function sendVerificationEmail(to, name, token) {
     const link = `${env.CLIENT_ORIGIN}/verify-email?token=${token}`;
 
+    // No email provider yet: print the link in the server logs instead.
+    // TEMPORARY: remove this fallback once a real provider (Resend) is set up.
     if (!env.EMAIL_API_KEY) {
         if (env.NODE_ENV !== 'production') {
             outbox.push({ to, link, token });
             if (outbox.length > 50) outbox.shift();
-            if (env.NODE_ENV === 'development') {
-                console.log(`\n[email:dev] Verification link for ${to}:\n${link}\n`);
-            }
+        }
+        if (env.NODE_ENV !== 'test') {
+            console.log(`\n[email:fallback] Verification link for ${to}:\n${link}\n`);
         }
         return;
     }
