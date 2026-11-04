@@ -16,7 +16,11 @@ const BCRYPT_ROUNDS = 12;
 const RESEND_COOLDOWN_MS = 60 * 1000;
 
 // used so a wrong email takes the same time as a wrong password
-const DUMMY_HASH = bcrypt.hashSync('not-a-real-password', BCRYPT_ROUNDS);
+let dummyHashPromise;
+function getDummyHash() {
+    dummyHashPromise ??= bcrypt.hash('not-a-real-password', BCRYPT_ROUNDS);
+    return dummyHashPromise;
+}
 
 export async function register(req, res) {
     const { name, email, password } = req.body;
@@ -118,7 +122,10 @@ export async function login(req, res) {
     const { email, password } = req.body;
 
     const user = await User.findOne({ email }).select('+passwordHash');
-    const passwordOk = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_HASH);
+    const passwordOk = await bcrypt.compare(
+        password,
+        user?.passwordHash ?? (await getDummyHash())
+    );
 
     // same message for "no such user" and "wrong password"
     if (!user || !passwordOk) {
