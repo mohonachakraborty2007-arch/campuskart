@@ -11,6 +11,9 @@ const schema = z.object({
     ALLOWED_EMAIL_DOMAINS: z.string().default(''),
     EMAIL_API_KEY: z.string().default(''),
     EMAIL_FROM: z.string().default('CampusKart <onboarding@resend.dev>'),
+    CLOUDINARY_CLOUD_NAME: z.string().default(''),
+    CLOUDINARY_API_KEY: z.string().default(''),
+    CLOUDINARY_API_SECRET: z.string().default(''),
 });
 
 const result = schema.safeParse(process.env);
