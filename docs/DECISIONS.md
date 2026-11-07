@@ -25,4 +25,4 @@
 - Photos are compressed in the browser (max 1600px, JPEG 80%), sent to our API, then uploaded to Cloudinary. The Cloudinary secret exists only in server env vars.
 - The server checks the first bytes of every upload, not the file name or type.
 - Delete is soft (status "removed"). Removing a photo while editing deletes it from Cloudinary.
-- Ownership is checked on every change: listing.seller vs the logged-in user, never an id sent from the browser (403 otherwise).
+- Ownership is checked on every change: listing.seller vs the logged-in user, never an id sent from the browser (403 otherwise)..
