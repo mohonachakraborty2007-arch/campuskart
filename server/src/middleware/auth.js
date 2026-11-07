@@ -29,4 +29,24 @@ export function requireVerified(req, res, next) {
         return next(new AppError(403, 'EMAIL_NOT_VERIFIED', 'Verify your college email first'));
     }
     next();
+}// Like auth, but never blocks: logged-in visitors get req.user, others carry on.
+export async function optionalAuth(req, res, next) {
+    try {
+        const token = req.cookies?.[COOKIE_NAME];
+        if (token) {
+            let payload = null;
+            try {
+                payload = verifySession(token);
+            } catch {
+                // bad or expired cookie: treat as a visitor
+            }
+            if (payload) {
+                const user = await User.findById(payload.sub);
+                if (user) req.user = user;
+            }
+        }
+        next();
+    } catch (err) {
+        next(err);
+    }
 }

@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "node --watch src/index.js",
     "start": "node src/index.js",
-    "test": "vitest run"
+    "test": "vitest run",
+    "seed": "node src/scripts/seed.js",
+    "seed:clear": "node src/scripts/seed.js --clear"
   },
   "keywords": [],
   "author": "",
