@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import ImageUploader from "@/components/ui/ImageUploader";
 import Input from "@/components/ui/Input";
@@ -8,18 +10,29 @@ import ListingCard from "@/components/ui/ListingCard";
 import Select from "@/components/ui/Select";
 import Textarea from "@/components/ui/Textarea";
 import Toggle from "@/components/ui/Toggle";
+import { api } from "@/lib/api";
 import { categories } from "@/lib/sampleListings";
+
+// the server accepts these two as well; the tiles elsewhere get them in Phase 6
+const extraCategories = [
+    { slug: "stationery", label: "Stationery & Lab" },
+    { slug: "other", label: "Other" },
+];
 
 const categoryOptions = [
     { value: "", label: "Choose a category" },
-    ...categories.map((c) => ({ value: c.slug, label: c.label })),
+    ...[...categories, ...extraCategories].map((c) => ({
+        value: c.slug,
+        label: c.label,
+    })),
 ];
 
 const conditionOptions = [
     { value: "", label: "Choose a condition" },
-    { value: "Like new", label: "Like new" },
-    { value: "Good", label: "Good" },
-    { value: "Fair", label: "Fair" },
+    { value: "new", label: "New" },
+    { value: "like-new", label: "Like new" },
+    { value: "good", label: "Good" },
+    { value: "fair", label: "Fair" },
 ];
 
 const empty = {
@@ -44,9 +57,27 @@ const fieldOrder = [
     "pickup",
 ];
 
-function validate(v, existing = 0) {
+// server field name -> form field name
+const serverFieldMap = {
+    title: "title",
+    description: "description",
+    category: "category",
+    condition: "condition",
+    price: "price",
+    pickupSpot: "pickup",
+    openToExchange: "exchange",
+};
+
+const photoCodes = [
+    "IMAGES_REQUIRED",
+    "TOO_MANY_FILES",
+    "INVALID_FILE_TYPE",
+    "FILE_TOO_LARGE",
+];
+
+function validate(v) {
     const e = {};
-    if (v.photos.length + existing === 0) e.photos = "Add at least one photo.";
+    if (v.photos.length === 0) e.photos = "Add at least one photo.";
     if (v.title.trim().length < 5)
         e.title = "Give your listing a title of at least 5 characters.";
     if (!v.category) e.category = "Choose a category.";
@@ -63,12 +94,27 @@ function validate(v, existing = 0) {
     return e;
 }
 
-export default function SellForm({ initial, existingPhotos = 0, mode = "create" }) {
-    const [values, setValues] = useState(
-        initial ? { ...empty, ...initial } : empty
-    );
+function scrollToPhotos() {
+    document
+        .getElementById("field-photos")
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+export default function SellForm({
+    initial,
+    initialPhotos = [],
+    listingId,
+    mode = "create",
+}) {
+    const router = useRouter();
+    const [values, setValues] = useState({
+        ...empty,
+        ...(initial ?? {}),
+        photos: initialPhotos,
+    });
     const [errors, setErrors] = useState({});
-    const [submitted, setSubmitted] = useState(false);
+    const [notice, setNotice] = useState(null);
+    const [submitting, setSubmitting] = useState(false);
 
     function set(key, value) {
         setValues((v) => ({ ...v, [key]: value }));
@@ -79,52 +125,83 @@ export default function SellForm({ initial, existingPhotos = 0, mode = "create" 
         });
     }
 
-    function handleSubmit(e) {
+    async function handleSubmit(e) {
         e.preventDefault();
         const form = e.currentTarget;
-        const found = validate(values, existingPhotos);
+        setNotice(null);
+
+        const found = validate(values);
         setErrors(found);
 
         const firstKey = fieldOrder.find((k) => found[k]);
         if (firstKey) {
             if (firstKey === "photos") {
-                document
-                    .getElementById("field-photos")
-                    ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                scrollToPhotos();
             } else {
                 form.elements.namedItem(firstKey)?.focus();
             }
             return;
         }
-        setSubmitted(true);
-        window.scrollTo({ top: 0, behavior: "smooth" });
-    }
 
-    function reset() {
-        values.photos.forEach((p) => URL.revokeObjectURL(p.url));
-        setValues(empty);
-        setErrors({});
-        setSubmitted(false);
-    }
+        // photos go as a form upload; do NOT set the content type by hand
+        const body = new FormData();
+        body.append("title", values.title.trim());
+        body.append("description", values.description.trim());
+        body.append("category", values.category);
+        body.append("condition", values.condition);
+        body.append("price", values.free ? "0" : String(values.price));
+        body.append("pickupSpot", values.pickup.trim());
+        body.append("openToExchange", String(values.exchange));
+        for (const photo of values.photos) {
+            if (photo.file) body.append("images", photo.file);
+        }
+        if (mode === "edit") {
+            const kept = new Set(
+                values.photos.filter((p) => p.existing).map((p) => p.publicId)
+            );
+            for (const old of initialPhotos) {
+                if (!kept.has(old.publicId)) body.append("removeImages", old.publicId);
+            }
+        }
 
-    if (submitted) {
-        return (
-            <div className="rounded-card border border-border bg-surface px-6 py-14 text-center">
-                <h2 className="text-2xl font-bold">
-                    {mode === "edit" ? "Changes saved" : "Listing ready"}
-                </h2>
-                <p className="mx-auto mt-3 max-w-md text-muted">
-                    Your form passed every check. This is a demo, so nothing is saved
-                    until the backend is connected.
-                </p>
-                <div className="mt-8 flex flex-wrap justify-center gap-3">
-                    <Button href="/listings">Browse listings</Button>
-                    <Button variant="secondary" onClick={reset}>
-                        Post another
-                    </Button>
-                </div>
-            </div>
-        );
+        setSubmitting(true);
+        try {
+            await api(mode === "edit" ? `/listings/${listingId}` : "/listings", {
+                method: mode === "edit" ? "PATCH" : "POST",
+                body,
+            });
+            values.photos.forEach((p) => p.file && URL.revokeObjectURL(p.url));
+            router.push("/my-listings");
+        } catch (err) {
+            setSubmitting(false);
+            if (err.code === "VALIDATION_ERROR" && err.fields) {
+                const mapped = {};
+                for (const [key, message] of Object.entries(err.fields)) {
+                    const name = serverFieldMap[key];
+                    if (name) mapped[name] = message;
+                }
+                setErrors(mapped);
+                setNotice({
+                    title: "Please fix the highlighted fields.",
+                    body: Object.keys(mapped).length ? "" : err.message,
+                });
+            } else if (photoCodes.includes(err.code)) {
+                setErrors({ photos: err.message });
+                scrollToPhotos();
+            } else if (err.code === "UNAUTHENTICATED") {
+                setNotice({
+                    title: "Your session expired.",
+                    body: "Log in again, then post your item.",
+                });
+            } else if (err.code === "EMAIL_NOT_VERIFIED") {
+                setNotice({
+                    title: "Verify your college email first.",
+                    body: "Only verified students can post items.",
+                });
+            } else {
+                setNotice({ title: "Could not save your listing.", body: err.message });
+            }
+        }
     }
 
     const priceLabel = values.free
@@ -148,6 +225,12 @@ export default function SellForm({ initial, existingPhotos = 0, mode = "create" 
     return (
         <div className="grid gap-10 lg:grid-cols-[1fr_340px]">
             <form onSubmit={handleSubmit} noValidate className="space-y-6">
+                {notice && (
+                    <Alert tone="error" title={notice.title}>
+                        {notice.body}
+                    </Alert>
+                )}
+
                 <div id="field-photos">
                     <ImageUploader
                         value={values.photos}
@@ -235,7 +318,12 @@ export default function SellForm({ initial, existingPhotos = 0, mode = "create" 
                 />
 
                 <div className="sticky bottom-[4.5rem] z-30 -mx-4 border-t border-border bg-background/95 px-4 py-3 backdrop-blur md:static md:mx-0 md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none">
-                    <Button type="submit" size="lg" className="w-full sm:w-auto">
+                    <Button
+                        type="submit"
+                        size="lg"
+                        loading={submitting}
+                        className="w-full sm:w-auto"
+                    >
                         {mode === "edit" ? "Save changes" : "Publish listing"}
                     </Button>
                 </div>

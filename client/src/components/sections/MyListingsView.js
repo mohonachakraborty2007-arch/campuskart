@@ -1,92 +1,164 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { useListingStatus } from "@/components/providers/ListingStatusProvider";
+import { useEffect, useState } from "react";
+import RequireVerified from "@/components/sections/RequireVerified";
+import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
 import Modal from "@/components/ui/Modal";
 import Tabs from "@/components/ui/Tabs";
 import Toggle from "@/components/ui/Toggle";
-import { getSellerListings } from "@/lib/sampleListings";
+import Link from "next/link";
+import { api } from "@/lib/api";
+import { formatPrice, timeAgo } from "@/lib/listingFormat";
 
-const OWNER = "s3"; // demo seller: Kabir M.
-
-export default function MyListingsView() {
-    const { statusOf, setStatus } = useListingStatus();
+function MyListingsInner() {
+    const [listings, setListings] = useState(null); // null = still loading
+    const [loadError, setLoadError] = useState("");
+    const [reloadKey, setReloadKey] = useState(0);
+    const [actionError, setActionError] = useState("");
+    const [busyId, setBusyId] = useState(null);
     const [confirmItem, setConfirmItem] = useState(null);
 
-    const { active, sold } = getSellerListings(OWNER);
-    const mine = [...active, ...sold];
-    const byStatus = (s) => mine.filter((l) => statusOf(l.id) === s);
+    useEffect(() => {
+        let cancelled = false;
+        api("/users/me/listings")
+            .then((data) => {
+                if (!cancelled) setListings(data.listings);
+            })
+            .catch((err) => {
+                if (!cancelled) {
+                    setLoadError(err.message);
+                    setListings([]);
+                }
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [reloadKey]);
 
-    function Row({ listing, status }) {
+    function retry() {
+        setListings(null);
+        setLoadError("");
+        setReloadKey((k) => k + 1);
+    }
+
+    function replace(updated) {
+        setListings((current) =>
+            current.map((l) => (l.id === updated.id ? updated : l))
+        );
+    }
+
+    async function toggleSold(listing) {
+        if (busyId) return;
+        setBusyId(listing.id);
+        setActionError("");
+        try {
+            const data = await api(`/listings/${listing.id}/sold`, { method: "PATCH" });
+            replace(data.listing);
+        } catch (err) {
+            setActionError(err.message);
+        } finally {
+            setBusyId(null);
+        }
+    }
+
+    async function removeListing() {
+        const listing = confirmItem;
+        setConfirmItem(null);
+        if (!listing) return;
+        setBusyId(listing.id);
+        setActionError("");
+        try {
+            const data = await api(`/listings/${listing.id}`, { method: "DELETE" });
+            replace(data.listing);
+        } catch (err) {
+            setActionError(err.message);
+        } finally {
+            setBusyId(null);
+        }
+    }
+
+    if (listings === null) {
         return (
-            <li className="flex flex-col gap-4 rounded-card border border-border bg-surface p-4 sm:flex-row sm:items-center">
-                <span
-                    aria-hidden="true"
-                    className="hidden h-16 w-16 shrink-0 rounded-input border border-border bg-surface-2 sm:block"
-                    style={{
-                        backgroundImage:
-                            "radial-gradient(rgba(244,245,250,0.1) 1px, transparent 1px)",
-                        backgroundSize: "10px 10px",
-                    }}
-                />
+            <p className="py-16 text-center text-muted" aria-live="polite">
+                Loading your listings...
+            </p>
+        );
+    }
+
+    if (loadError) {
+        return (
+            <EmptyState
+                title="Could not load your listings"
+                action={<Button onClick={retry}>Try again</Button>}
+            >
+                {loadError}
+            </EmptyState>
+        );
+    }
+
+    const byStatus = (s) => listings.filter((l) => l.status === s);
+
+    function renderRow(listing) {
+        const removed = listing.status === "removed";
+        return (
+            <li
+                key={listing.id}
+                className="flex flex-col gap-4 rounded-card border border-border bg-surface p-4 sm:flex-row sm:items-center"
+            >
+                {listing.images[0] ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                        src={listing.images[0].url}
+                        alt=""
+                        className="hidden h-16 w-16 shrink-0 rounded-input border border-border object-cover sm:block"
+                    />
+                ) : (
+                    <span
+                        aria-hidden="true"
+                        className="hidden h-16 w-16 shrink-0 rounded-input border border-border bg-surface-2 sm:block"
+                    />
+                )}
 
                 <div className="min-w-0 flex-1">
-                    {status === "removed" ? (
-                        <p className="truncate font-medium text-muted line-through">
-                            {listing.title}
-                        </p>
-                    ) : (
-                        <Link
-                            href={`/listings/${listing.id}`}
-                            className="block truncate font-medium hover:text-accent"
-                        >
-                            {listing.title}
-                        </Link>
-                    )}
+                    <p
+                        className={`truncate font-medium ${removed ? "text-muted line-through" : ""
+                            }`}
+                    >
+                        {listing.title}
+                    </p>
                     <p className="mt-1 text-sm text-muted">
-                        ₹{listing.price.toLocaleString("en-IN")} · {listing.postedAgo}
+                        {formatPrice(listing.price)} · {timeAgo(listing.createdAt)}
                     </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-                    {status === "removed" ? (
-                        <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => setStatus(listing.id, "active")}
+                {removed ? (
+                    <p className="text-sm text-muted">Removed</p>
+                ) : (
+                    <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+                        <div className="w-40">
+                            <Toggle
+                                label="Mark as sold"
+                                checked={listing.status === "sold"}
+                                onChange={() => toggleSold(listing)}
+                            />
+                        </div>
+                        <Link
+                            href={`/listings/${listing.id}/edit`}
+                            className="min-h-11 content-center text-sm text-accent underline-offset-4 hover:underline"
                         >
-                            Restore
-                        </Button>
-                    ) : (
-                        <>
-                            <div className="w-40">
-                                <Toggle
-                                    label="Mark as sold"
-                                    checked={status === "sold"}
-                                    onChange={(on) =>
-                                        setStatus(listing.id, on ? "sold" : "active")
-                                    }
-                                />
-                            </div>
-                            <Link
-                                href={`/listings/${listing.id}/edit`}
-                                className="min-h-11 content-center text-sm text-accent underline-offset-4 hover:underline"
-                            >
-                                Edit
-                            </Link>
-                            <button
-                                type="button"
-                                onClick={() => setConfirmItem(listing)}
-                                className="min-h-11 text-sm text-muted transition hover:text-danger"
-                            >
-                                Remove
-                            </button>
-                        </>
-                    )}
-                </div>
+                            Edit
+                        </Link>
+                        <button
+                            type="button"
+                            onClick={() => setConfirmItem(listing)}
+                            className="min-h-11 text-sm text-muted transition hover:text-danger"
+                        >
+                            Remove
+                        </button>
+                    </div>
+                )}
             </li>
         );
     }
@@ -100,13 +172,7 @@ export default function MyListingsView() {
                 </EmptyState>
             );
         }
-        return (
-            <ul className="space-y-3">
-                {items.map((l) => (
-                    <Row key={l.id} listing={l} status={status} />
-                ))}
-            </ul>
-        );
+        return <ul className="space-y-3">{items.map(renderRow)}</ul>;
     }
 
     const tabs = [
@@ -138,7 +204,7 @@ export default function MyListingsView() {
             content: list(
                 "removed",
                 "No removed listings",
-                "Items you remove can be restored from here."
+                "Items you remove are hidden from Browse and show up here."
             ),
         },
     ];
@@ -153,6 +219,14 @@ export default function MyListingsView() {
                 <Button href="/sell">Post an item</Button>
             </div>
 
+            {actionError && (
+                <div className="mt-6">
+                    <Alert tone="error" title="That did not work.">
+                        {actionError}
+                    </Alert>
+                </div>
+            )}
+
             <div className="mt-8">
                 <Tabs tabs={tabs} />
             </div>
@@ -163,17 +237,10 @@ export default function MyListingsView() {
                 title="Remove this listing?"
             >
                 <p className="text-muted">
-                    &ldquo;{confirmItem?.title}&rdquo; will disappear from Browse. You can
-                    restore it from the Removed tab.
+                    &ldquo;{confirmItem?.title}&rdquo; will disappear from Browse.
                 </p>
                 <div className="mt-6 flex gap-3">
-                    <Button
-                        variant="danger"
-                        onClick={() => {
-                            setStatus(confirmItem.id, "removed");
-                            setConfirmItem(null);
-                        }}
-                    >
+                    <Button variant="danger" onClick={removeListing}>
                         Remove
                     </Button>
                     <Button variant="ghost" onClick={() => setConfirmItem(null)}>
@@ -182,5 +249,13 @@ export default function MyListingsView() {
                 </div>
             </Modal>
         </div>
+    );
+}
+
+export default function MyListingsView() {
+    return (
+        <RequireVerified>
+            <MyListingsInner />
+        </RequireVerified>
     );
 }

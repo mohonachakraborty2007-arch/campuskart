@@ -1,3 +1,4 @@
+import RequireVerified from "@/components/sections/RequireVerified";
 import SellForm from "@/components/sections/SellForm";
 
 export const metadata = { title: "Sell something | CampusKart" };
@@ -10,7 +11,9 @@ export default function SellPage() {
                 Post it in under two minutes. Listing is free.
             </p>
             <div className="mt-8">
-                <SellForm />
+                <RequireVerified>
+                    <SellForm />
+                </RequireVerified>
             </div>
         </div>
     );

@@ -8,14 +8,17 @@ export class ApiError extends Error {
 }
 
 // All calls go to /api/... on the same site; Next forwards them to the server.
+// Pass a FormData as `body` to upload files (the browser sets the content type itself).
 export async function api(path, { method = "GET", body } = {}) {
+    const isForm = typeof FormData !== "undefined" && body instanceof FormData;
+
     let res;
     try {
         res = await fetch(`/api${path}`, {
             method,
             credentials: "include",
-            headers: body ? { "Content-Type": "application/json" } : undefined,
-            body: body ? JSON.stringify(body) : undefined,
+            headers: body && !isForm ? { "Content-Type": "application/json" } : undefined,
+            body: body ? (isForm ? body : JSON.stringify(body)) : undefined,
         });
     } catch {
         throw new ApiError(
