@@ -20,3 +20,9 @@
 - The browser only talks to the Vercel site; Next.js rewrites /api/* to the Render API. This keeps cookies same-origin, so there is no CORS or third-party cookie trouble on phones.
 - Email: no provider yet. Verification links are printed in the Render logs (temporary fallback). Plan: add Resend (HTTP API; SMTP is blocked on Render free) before real students sign up.
 - Atlas network access is 0.0.0.0/0 because Render free has no fixed IP. The database password protects it.
+
+## Phase 5: listings and images
+- Photos are compressed in the browser (max 1600px, JPEG 80%), sent to our API, then uploaded to Cloudinary. The Cloudinary secret exists only in server env vars.
+- The server checks the first bytes of every upload, not the file name or type.
+- Delete is soft (status "removed"). Removing a photo while editing deletes it from Cloudinary.
+- Ownership is checked on every change: listing.seller vs the logged-in user, never an id sent from the browser (403 otherwise).
