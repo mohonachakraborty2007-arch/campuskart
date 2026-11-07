@@ -53,7 +53,7 @@ as a learning and portfolio project.
 - [x] Phase 2: Project initialisation
 - [x] Phase 3: UI (all pages on sample data)
 - [x] Phase 4: Auth and Deploy
-- [ ] Phase 5
+- [x] Phase 5: listings and images
 - [ ] Phase 6
 - [ ] Phase 7
 - [ ] Phase 8
