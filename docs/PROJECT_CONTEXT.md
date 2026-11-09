@@ -54,7 +54,7 @@ as a learning and portfolio project.
 - [x] Phase 3: UI (all pages on sample data)
 - [x] Phase 4: Auth and Deploy
 - [x] Phase 5: listings and images
-- [ ] Phase 6
+- [x] Phase 6: search, filters, pagination, detail, seller profile
 - [ ] Phase 7
 - [ ] Phase 8
 - [ ] Phase 9
