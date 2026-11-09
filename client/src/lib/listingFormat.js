@@ -1,3 +1,5 @@
+import { conditionLabels } from "@/lib/categories";
+
 export function formatPrice(price) {
     return price === 0 ? "Free" : `₹${price.toLocaleString("en-IN")}`;
 }
@@ -18,4 +20,27 @@ export function timeAgo(dateString) {
         day: "numeric",
         month: "short",
     });
+}
+
+export function memberSince(dateString) {
+    return new Date(dateString).toLocaleDateString("en-IN", {
+        month: "short",
+        year: "numeric",
+    });
+}
+
+// turns a listing from the API into the shape ListingCard expects
+export function toCardListing(l) {
+    return {
+        id: l.id,
+        title: l.title,
+        price: l.price,
+        priceLabel: formatPrice(l.price),
+        condition: conditionLabels[l.condition] ?? l.condition,
+        category: l.category,
+        location: l.pickupSpot || "On campus",
+        postedAgo: timeAgo(l.createdAt),
+        image: l.images?.[0]?.url ?? null,
+        sold: l.status === "sold",
+    };
 }

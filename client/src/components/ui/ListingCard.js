@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useSaved } from "@/components/providers/SavedProvider";
-import { categories } from "@/lib/sampleListings";
+import { categoryLabel } from "@/lib/categories";
 
 const conditionStyles = {
+    New: "text-accent border-accent/40",
     "Like new": "text-success border-success/40",
     Good: "text-accent border-accent/40",
     Fair: "text-warning border-warning/40",
@@ -17,9 +18,7 @@ export default function ListingCard({
 }) {
     const { isSaved, toggle } = useSaved();
     const saved = isSaved(listing.id);
-    const categoryLabel =
-        categories.find((c) => c.slug === listing.category)?.label ??
-        listing.category;
+    const label = categoryLabel(listing.category);
 
     return (
         <article
@@ -48,7 +47,7 @@ export default function ListingCard({
                             backgroundSize: "16px 16px",
                         }}
                     >
-                        <span className="text-sm text-muted">{categoryLabel}</span>
+                        <span className="text-sm text-muted">{label}</span>
                     </div>
                 )}
 

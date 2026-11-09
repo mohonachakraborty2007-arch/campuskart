@@ -122,12 +122,18 @@ function MyListingsInner() {
                 )}
 
                 <div className="min-w-0 flex-1">
-                    <p
-                        className={`truncate font-medium ${removed ? "text-muted line-through" : ""
-                            }`}
-                    >
-                        {listing.title}
-                    </p>
+                    {removed ? (
+                        <p className="truncate font-medium text-muted line-through">
+                            {listing.title}
+                        </p>
+                    ) : (
+                        <Link
+                            href={`/listings/${listing.id}`}
+                            className="block truncate font-medium hover:text-accent"
+                        >
+                            {listing.title}
+                        </Link>
+                    )}
                     <p className="mt-1 text-sm text-muted">
                         {formatPrice(listing.price)} · {timeAgo(listing.createdAt)}
                     </p>

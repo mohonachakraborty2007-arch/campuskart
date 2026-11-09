@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import Button from "@/components/ui/Button";
@@ -9,96 +9,200 @@ import EmptyState from "@/components/ui/EmptyState";
 import Input from "@/components/ui/Input";
 import ListingCard from "@/components/ui/ListingCard";
 import Select from "@/components/ui/Select";
-import { useListingStatus } from "@/components/providers/ListingStatusProvider";
-import { categories, sampleListings } from "@/lib/sampleListings";
-
-const PAGE_SIZE = 6;
+import { ListingCardSkeleton } from "@/components/ui/Skeleton";
+import Toggle from "@/components/ui/Toggle";
+import { api } from "@/lib/api";
+import { allCategories, conditionOptions } from "@/lib/categories";
+import { toCardListing } from "@/lib/listingFormat";
 
 const sortOptions = [
     { value: "newest", label: "Newest first" },
-    { value: "price-asc", label: "Price: low to high" },
-    { value: "price-desc", label: "Price: high to low" },
+    { value: "price_asc", label: "Price: low to high" },
+    { value: "price_desc", label: "Price: high to low" },
 ];
 
-const conditionOptions = [
-    { value: "", label: "Any condition" },
-    { value: "Like new", label: "Like new" },
-    { value: "Good", label: "Good" },
-    { value: "Fair", label: "Fair" },
-];
+// 1 ... 4 5 6 ... 12
+function pageNumbers(current, pages) {
+    if (pages <= 7) return Array.from({ length: pages }, (_, i) => i + 1);
+    const wanted = [...new Set([1, pages, current - 1, current, current + 1])]
+        .filter((n) => n >= 1 && n <= pages)
+        .sort((a, b) => a - b);
+    const out = [];
+    wanted.forEach((n, i) => {
+        if (i > 0 && n - wanted[i - 1] > 1) out.push(`gap-${n}`);
+        out.push(n);
+    });
+    return out;
+}
 
 export default function BrowseView() {
     const router = useRouter();
     const params = useSearchParams();
+    const paramsString = params.toString();
     const [open, setOpen] = useState(false);
-    const { statusOf } = useListingStatus();
 
+    // everything lives in the URL
     const q = params.get("q") ?? "";
     const category = params.get("category") ?? "";
     const sort = params.get("sort") ?? "newest";
     const condition = params.get("condition") ?? "";
-    const min = params.get("min") ?? "";
-    const max = params.get("max") ?? "";
+    const exchange = params.get("exchange") === "true";
+    const minPrice = params.get("minPrice") ?? "";
+    const maxPrice = params.get("maxPrice") ?? "";
     const page = Math.max(1, Number(params.get("page")) || 1);
 
-    function hrefWith(changes) {
-        const next = new URLSearchParams(params.toString());
-        for (const [key, value] of Object.entries(changes)) {
-            if (value === "" || value == null) next.delete(key);
-            else next.set(key, value);
-        }
-        if (!("page" in changes)) next.delete("page");
-        const qs = next.toString();
-        return qs ? `/listings?${qs}` : "/listings";
+    const buildHref = useCallback(
+        (changes) => {
+            const next = new URLSearchParams(paramsString);
+            for (const [key, value] of Object.entries(changes)) {
+                if (value === "" || value == null) next.delete(key);
+                else next.set(key, value);
+            }
+            if (!("page" in changes)) next.delete("page");
+            const qs = next.toString();
+            return qs ? `/listings?${qs}` : "/listings";
+        },
+        [paramsString]
+    );
+
+    const update = useCallback(
+        (changes) => router.replace(buildHref(changes), { scroll: false }),
+        [router, buildHref]
+    );
+
+    // text boxes: typed locally, pushed to the URL 400 ms after you stop typing
+    const [search, setSearch] = useState(q);
+    const [minInput, setMinInput] = useState(minPrice);
+    const [maxInput, setMaxInput] = useState(maxPrice);
+    const pushed = useRef({ q, minPrice, maxPrice });
+
+    function applyText() {
+        const next = { q: search.trim(), minPrice: minInput, maxPrice: maxInput };
+        pushed.current = next;
+        update(next);
     }
+
+    useEffect(() => {
+        const trimmed = search.trim();
+        if (trimmed === q && minInput === minPrice && maxInput === maxPrice) return;
+        const timer = setTimeout(() => {
+            const next = { q: trimmed, minPrice: minInput, maxPrice: maxInput };
+            pushed.current = next;
+            update(next);
+        }, 400);
+        return () => clearTimeout(timer);
+    }, [search, minInput, maxInput, q, minPrice, maxPrice, update]);
+
+    // URL changed from outside (Clear filters, back button): refresh the boxes
+    useEffect(() => {
+        const last = pushed.current;
+        if (q === last.q && minPrice === last.minPrice && maxPrice === last.maxPrice) return;
+        pushed.current = { q, minPrice, maxPrice };
+        setSearch(q);
+        setMinInput(minPrice);
+        setMaxInput(maxPrice);
+    }, [q, minPrice, maxPrice]);
+
+    // fetch from the server (filtering is done by the server, never here)
+    const apiQuery = useMemo(() => {
+        const source = new URLSearchParams(paramsString);
+        const p = new URLSearchParams();
+        for (const key of ["q", "category", "condition", "sort", "minPrice", "maxPrice"]) {
+            const v = source.get(key);
+            if (v) p.set(key, v);
+        }
+        if (source.get("exchange") === "true") p.set("exchange", "true");
+        p.set("page", String(Math.max(1, Number(source.get("page")) || 1)));
+        p.set("limit", "12");
+        return p.toString();
+    }, [paramsString]);
+
+    const [result, setResult] = useState({ key: null, listings: [], meta: null, error: "" });
+
+    useEffect(() => {
+        let cancelled = false;
+        api(`/listings?${apiQuery}`)
+            .then((data) => {
+                if (!cancelled) {
+                    setResult({ key: apiQuery, listings: data.listings, meta: data.meta, error: "" });
+                }
+            })
+            .catch((err) => {
+                if (!cancelled) {
+                    setResult({ key: apiQuery, listings: [], meta: null, error: err.message });
+                }
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [apiQuery]);
+
+    const loading = result.key !== apiQuery;
+    const hasData = result.key !== null;
+    const total = result.meta?.total ?? 0;
+    const pages = result.meta?.pages ?? 1;
+
+    const hasFilters =
+        q || category || condition || exchange || minPrice || maxPrice || sort !== "newest";
 
     function handleSubmit(e) {
         e.preventDefault();
-        const data = new FormData(e.currentTarget);
-        const sortValue = data.get("sort");
-        router.replace(
-            hrefWith({
-                q: String(data.get("q") ?? "").trim(),
-                sort: sortValue === "newest" ? "" : sortValue,
-                condition: data.get("condition"),
-                min: data.get("min"),
-                max: data.get("max"),
-            }),
-            { scroll: false }
-        );
+        applyText();
     }
 
-    // filter
-    const all = sampleListings
-        .filter((l) => statusOf(l.id) !== "removed")
-        .map((l) => ({ ...l, sold: statusOf(l.id) === "sold" }));
-
-    const filtered = all.filter((l) => {
-        if (category && l.category !== category) return false;
-        if (condition && l.condition !== condition) return false;
-        if (q && !l.title.toLowerCase().includes(q.toLowerCase())) return false;
-        if (min !== "" && l.price < Number(min)) return false;
-        if (max !== "" && l.price > Number(max)) return false;
-        return true;
-    });
-
-    // sort
-    const sorted = [...filtered];
-    if (sort === "price-asc") sorted.sort((a, b) => a.price - b.price);
-    if (sort === "price-desc") sorted.sort((a, b) => b.price - a.price);
-
-    // paginate
-    const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
-    const current = Math.min(page, totalPages);
-    const visible = sorted.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE);
-
-    const hasFilters =
-        q || category || condition || min || max || sort !== "newest";
+    let body;
+    if (result.error && !loading) {
+        body = (
+            <EmptyState
+                title="Could not load listings"
+                action={
+                    <Button href="/listings" variant="secondary">
+                        Clear filters
+                    </Button>
+                }
+            >
+                {result.error}
+            </EmptyState>
+        );
+    } else if (loading && result.listings.length === 0) {
+        body = (
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {Array.from({ length: 6 }).map((_, i) => (
+                    <ListingCardSkeleton key={i} />
+                ))}
+            </div>
+        );
+    } else if (result.listings.length > 0) {
+        body = (
+            <div
+                aria-busy={loading}
+                className={`grid grid-cols-1 gap-5 transition-opacity sm:grid-cols-2 lg:grid-cols-3 ${loading ? "opacity-60" : ""
+                    }`}
+            >
+                {result.listings.map((listing) => (
+                    <ListingCard key={listing.id} listing={toCardListing(listing)} />
+                ))}
+            </div>
+        );
+    } else {
+        body = (
+            <EmptyState
+                title="No results"
+                action={
+                    <Button href="/listings" variant="secondary">
+                        Clear filters
+                    </Button>
+                }
+            >
+                Nothing matches your search. Try different words or clear the filters.
+            </EmptyState>
+        );
+    }
 
     return (
         <div>
             {/* search + filters */}
-            <form key={params.toString()} onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit}>
                 <div className="flex gap-2">
                     <Input
                         className="flex-1"
@@ -106,8 +210,10 @@ export default function BrowseView() {
                         hideLabel
                         name="q"
                         type="search"
+                        maxLength={60}
                         placeholder="Search books, cycles, calculators"
-                        defaultValue={q}
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
                     />
                     <Button type="submit">Search</Button>
                     <button
@@ -120,61 +226,67 @@ export default function BrowseView() {
                         Filters
                     </button>
                 </div>
+                <p className="mt-2 text-xs text-muted">
+                    Search matches whole words, so try &ldquo;calculator&rdquo; rather than
+                    &ldquo;calc&rdquo;.
+                </p>
 
-                <div
-                    id="filter-panel"
-                    className={`${open ? "grid" : "hidden"
-                        } mt-4 gap-3 sm:grid-cols-2 md:grid md:grid-cols-5`}
-                >
-                    <Select
-                        label="Sort by"
-                        name="sort"
-                        defaultValue={sort}
-                        options={sortOptions}
-                        onChange={(e) => e.currentTarget.form.requestSubmit()}
-                    />
-                    <Select
-                        label="Condition"
-                        name="condition"
-                        defaultValue={condition}
-                        options={conditionOptions}
-                        onChange={(e) => e.currentTarget.form.requestSubmit()}
-                    />
-                    <Input
-                        label="Min price (₹)"
-                        name="min"
-                        type="number"
-                        min="0"
-                        inputMode="numeric"
-                        defaultValue={min}
-                    />
-                    <Input
-                        label="Max price (₹)"
-                        name="max"
-                        type="number"
-                        min="0"
-                        inputMode="numeric"
-                        defaultValue={max}
-                    />
-                    <Button type="submit" variant="secondary" className="self-end">
-                        Apply
-                    </Button>
+                <div id="filter-panel" className={`${open ? "block" : "hidden"} md:block`}>
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2 md:grid-cols-4">
+                        <Select
+                            label="Sort by"
+                            name="sort"
+                            value={sort}
+                            options={sortOptions}
+                            onChange={(e) =>
+                                update({ sort: e.target.value === "newest" ? "" : e.target.value })
+                            }
+                        />
+                        <Select
+                            label="Condition"
+                            name="condition"
+                            value={condition}
+                            options={conditionOptions}
+                            onChange={(e) => update({ condition: e.target.value })}
+                        />
+                        <Input
+                            label="Min price (₹)"
+                            name="minPrice"
+                            type="number"
+                            min="0"
+                            inputMode="numeric"
+                            value={minInput}
+                            onChange={(e) => setMinInput(e.target.value)}
+                        />
+                        <Input
+                            label="Max price (₹)"
+                            name="maxPrice"
+                            type="number"
+                            min="0"
+                            inputMode="numeric"
+                            value={maxInput}
+                            onChange={(e) => setMaxInput(e.target.value)}
+                        />
+                    </div>
+                    <div className="mt-4">
+                        <Toggle
+                            label="Open to exchange only"
+                            checked={exchange}
+                            onChange={(on) => update({ exchange: on ? "true" : "" })}
+                        />
+                    </div>
                 </div>
             </form>
 
             {/* category tabs */}
             <div className="mt-6 flex flex-wrap gap-2">
-                <CategoryChip
-                    label="All"
-                    active={!category}
-                    href={hrefWith({ category: "" })}
-                />
-                {categories.map((cat) => (
+                <CategoryChip label="All" active={!category} href={buildHref({ category: "" })} />
+                {allCategories.map((cat) => (
                     <CategoryChip
                         key={cat.slug}
                         label={cat.label}
                         active={category === cat.slug}
-                        href={hrefWith({ category: cat.slug })}
+                        href={buildHref({ category: cat.slug })}
                     />
                 ))}
             </div>
@@ -182,7 +294,13 @@ export default function BrowseView() {
             {/* result count */}
             <div className="mt-8 flex items-center justify-between gap-4">
                 <p aria-live="polite" className="text-muted">
-                    {sorted.length} {sorted.length === 1 ? "item" : "items"}
+                    {loading && hasData
+                        ? "Updating..."
+                        : loading
+                            ? "Loading..."
+                            : result.error
+                                ? ""
+                                : `${total} ${total === 1 ? "item" : "items"}`}
                 </p>
                 {hasFilters && (
                     <Link
@@ -194,48 +312,49 @@ export default function BrowseView() {
                 )}
             </div>
 
-            {/* grid or empty */}
-            {visible.length > 0 ? (
-                <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                    {visible.map((listing) => (
-                        <ListingCard key={listing.id} listing={listing} />
-                    ))}
-                </div>
-            ) : (
-                <div className="mt-5">
-                    <EmptyState
-                        title="No results"
-                        action={
-                            <Button href="/listings" variant="secondary">
-                                Clear filters
-                            </Button>
-                        }
-                    >
-                        Nothing matches your search. Try different words or clear the
-                        filters.
-                    </EmptyState>
-                </div>
-            )}
+            <div className="mt-5">{body}</div>
 
             {/* pagination */}
-            {totalPages > 1 && (
+            {pages > 1 && (
                 <nav
                     aria-label="Pagination"
-                    className="mt-10 flex items-center justify-center gap-2"
+                    className="mt-10 flex flex-wrap items-center justify-center gap-2"
                 >
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+                    {page > 1 && (
                         <Link
-                            key={n}
-                            href={hrefWith({ page: n === 1 ? "" : String(n) })}
-                            aria-current={n === current ? "page" : undefined}
-                            className={`grid h-11 min-w-11 place-items-center rounded-button border px-3 text-sm font-medium transition ${n === current
-                                ? "border-primary bg-primary text-background"
-                                : "border-border text-muted hover:border-primary hover:text-foreground"
-                                }`}
+                            href={buildHref({ page: page - 1 === 1 ? "" : String(page - 1) })}
+                            className="grid h-11 place-items-center rounded-button border border-border px-4 text-sm font-medium text-muted transition hover:border-primary hover:text-foreground"
                         >
-                            {n}
+                            Previous
                         </Link>
-                    ))}
+                    )}
+                    {pageNumbers(page, pages).map((n) =>
+                        typeof n === "string" ? (
+                            <span key={n} aria-hidden="true" className="px-1 text-muted">
+                                ...
+                            </span>
+                        ) : (
+                            <Link
+                                key={n}
+                                href={buildHref({ page: n === 1 ? "" : String(n) })}
+                                aria-current={n === page ? "page" : undefined}
+                                className={`grid h-11 min-w-11 place-items-center rounded-button border px-3 text-sm font-medium transition ${n === page
+                                    ? "border-primary bg-primary text-background"
+                                    : "border-border text-muted hover:border-primary hover:text-foreground"
+                                    }`}
+                            >
+                                {n}
+                            </Link>
+                        )
+                    )}
+                    {page < pages && (
+                        <Link
+                            href={buildHref({ page: String(page + 1) })}
+                            className="grid h-11 place-items-center rounded-button border border-border px-4 text-sm font-medium text-muted transition hover:border-primary hover:text-foreground"
+                        >
+                            Next
+                        </Link>
+                    )}
                 </nav>
             )}
         </div>
