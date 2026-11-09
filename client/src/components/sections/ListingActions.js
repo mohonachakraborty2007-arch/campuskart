@@ -1,11 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useAuth } from "@/components/providers/AuthProvider";
+import { useSaved } from "@/components/providers/SavedProvider";
+import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import Select from "@/components/ui/Select";
 import Textarea from "@/components/ui/Textarea";
-import { useSaved } from "@/components/providers/SavedProvider";
+import { api } from "@/lib/api";
 
 const reasons = [
     { value: "spam", label: "Spam or fake listing" },
@@ -15,27 +19,62 @@ const reasons = [
 ];
 
 export default function ListingActions({ listing }) {
+    const { user } = useAuth();
+    const router = useRouter();
+    const pathname = usePathname();
     const { isSaved, toggle } = useSaved();
     const saved = isSaved(listing.id);
     const sold = listing.status === "sold";
+
     const [contactOpen, setContactOpen] = useState(false);
-    const [contactSent, setContactSent] = useState(false);
+    const [sending, setSending] = useState(false);
+    const [contactError, setContactError] = useState("");
+    const [sentInfo, setSentInfo] = useState(null); // { whatsapp } once sent
+
     const [reportOpen, setReportOpen] = useState(false);
     const [reportSent, setReportSent] = useState(false);
 
+    function openContact() {
+        if (!user) {
+            router.push(`/login?next=${encodeURIComponent(pathname)}`);
+            return;
+        }
+        setContactOpen(true);
+    }
+
     function closeContact() {
         setContactOpen(false);
-        setContactSent(false);
+        setSentInfo(null);
+        setContactError("");
     }
+
     function closeReport() {
         setReportOpen(false);
         setReportSent(false);
     }
 
+    async function sendMessage(e) {
+        e.preventDefault();
+        const message = String(new FormData(e.currentTarget).get("message") ?? "").trim();
+        setSending(true);
+        setContactError("");
+        try {
+            const data = await api(`/listings/${listing.id}/inquiries`, {
+                method: "POST",
+                body: { message },
+            });
+            setSentInfo({ whatsapp: data.contact?.whatsapp ?? null });
+        } catch (err) {
+            setContactError(err.fields?.message || err.message);
+        } finally {
+            setSending(false);
+        }
+    }
+
     return (
         <>
             <div className="mt-6 flex flex-wrap gap-3">
-                <Button size="lg" disabled={sold} onClick={() => setContactOpen(true)}>
+                <Button size="lg" disabled={sold} onClick={openContact}>
                     {sold ? "Sold" : "Contact seller"}
                 </Button>
                 <Button
@@ -56,32 +95,47 @@ export default function ListingActions({ listing }) {
                 onClose={closeContact}
                 title={`Message ${listing.seller.name}`}
             >
-                {contactSent ? (
+                {sentInfo ? (
                     <div>
                         <p className="text-muted">
-                            Message sent. {listing.seller.name} will reply in the app. (Demo
-                            only: real chat arrives with the backend.)
+                            Message sent. {listing.seller.name} will see it in their inbox.
                         </p>
+                        {sentInfo.whatsapp && (
+                            <p className="mt-4">
+                                {listing.seller.name} also shares WhatsApp:{" "}
+                                <a
+                                    href={`https://wa.me/${sentInfo.whatsapp.replace(/\D/g, "")}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="font-medium text-accent underline-offset-4 hover:underline"
+                                >
+                                    {sentInfo.whatsapp}
+                                </a>
+                            </p>
+                        )}
                         <Button className="mt-5" onClick={closeContact}>
                             Done
                         </Button>
                     </div>
                 ) : (
-                    <form
-                        onSubmit={(e) => {
-                            e.preventDefault();
-                            setContactSent(true);
-                        }}
-                    >
+                    <form onSubmit={sendMessage} className="space-y-4">
                         <Textarea
                             label="Your message"
                             name="message"
                             required
+                            maxLength={500}
                             defaultValue={`Hi, is "${listing.title}" still available?`}
-                            hint="Suggest a pickup time at a public spot on campus."
+                            hint="Say how the seller can reach you, and suggest a public spot on campus."
                         />
-                        <div className="mt-5 flex gap-3">
-                            <Button type="submit">Send message</Button>
+                        {contactError && (
+                            <Alert tone="error" title="Message not sent.">
+                                {contactError}
+                            </Alert>
+                        )}
+                        <div className="flex gap-3">
+                            <Button type="submit" loading={sending}>
+                                Send message
+                            </Button>
                             <Button type="button" variant="ghost" onClick={closeContact}>
                                 Cancel
                             </Button>

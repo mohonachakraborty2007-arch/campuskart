@@ -45,6 +45,8 @@ const userSchema = new mongoose.Schema(
             type: Date,
             select: false,
         },
+        whatsapp: { type: String, trim: true, default: '' },
+        showWhatsapp: { type: Boolean, default: false },
         department: {
             type: String,
             trim: true,
