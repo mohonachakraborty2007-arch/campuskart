@@ -17,6 +17,7 @@ const reasons = [
 export default function ListingActions({ listing }) {
     const { isSaved, toggle } = useSaved();
     const saved = isSaved(listing.id);
+    const sold = listing.status === "sold";
     const [contactOpen, setContactOpen] = useState(false);
     const [contactSent, setContactSent] = useState(false);
     const [reportOpen, setReportOpen] = useState(false);
@@ -34,8 +35,8 @@ export default function ListingActions({ listing }) {
     return (
         <>
             <div className="mt-6 flex flex-wrap gap-3">
-                <Button size="lg" onClick={() => setContactOpen(true)}>
-                    Contact seller
+                <Button size="lg" disabled={sold} onClick={() => setContactOpen(true)}>
+                    {sold ? "Sold" : "Contact seller"}
                 </Button>
                 <Button
                     size="lg"
