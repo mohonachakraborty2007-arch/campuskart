@@ -56,3 +56,12 @@
 - **Reports:** one per person per listing (duplicate gives 409). Admin can remove a listing, which settles all its open reports, or dismiss one report.
 - **Admin:** created by `pnpm admin:create` from `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `.env`, never from code. `requireAdmin` re-checks the role in the database on every request. The admin page has no menu link; the server check is the real lock.
 - **Known limitations:** no email or push notifications, no real-time chat, no user banning (all deferred by the blueprint).
+## Phase 8: Polish, motion, accessibility, states
+
+- **Motion is CSS only**, with no animation library. A global `prefers-reduced-motion` rule switches it off. New in this phase: heart pop, hero cards tilting toward the mouse (desktop mouse only).
+- **Hero cards are decoration**, so they are `inert` (no links, no focus). They still use sample data on purpose.
+- **Card images** are resized by Cloudinary (`f_auto,q_auto,w_600`) and lazy-loaded.
+- **Category tiles** show short descriptions instead of counts, because real counts would need a new server endpoint. Revisit later.
+- **The home ticker** shows real listings and hides itself with fewer than 3.
+- **Share previews:** Next.js generates the social image (`opengraph-image.js`). `SITE_URL` is set in Vercel.
+- **Lighthouse:** 100 on the home page, `/listings` and a listing detail.

@@ -56,7 +56,7 @@ as a learning and portfolio project.
 - [x] Phase 5: listings and images
 - [x] Phase 6: search, filters, pagination, detail, seller profile
 - [x] Phase 7: mvp-complete
-- [ ] Phase 8
+- [x] Phase 8: style: polish, motion, accessibility, states
 - [ ] Phase 9
 - [ ] Phase 10
 
