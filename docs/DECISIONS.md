@@ -48,3 +48,11 @@
 - **The public seller profile never exposes email.** It shows only the name, department, year, member-since date and verified badge.
 - **The detail page loads in the browser**, so an owner who is logged in can still see their own removed listing.
 - **Still demo until Phase 7:** Save, Contact and Report on a listing, and the saved-items page. 
+## Phase 7: Wishlist, contact seller, sold, report, admin
+
+- **Wishlist** is stored on the server (unique per user and listing). The heart updates instantly and rolls back with a message if the server fails. Saving is safe to repeat.
+- **Inquiries are one-way messages, not chat.** Max 500 characters, 10 per hour per user, none to yourself or to a sold or removed listing. The recipient always comes from the database, never from the request. There is no in-app reply yet, so the message box asks buyers to say how to reach them.
+- **WhatsApp is opt-in** (default off). The seller's number is shown to a buyer only after that buyer sends a message, and it never appears on listings or profiles.
+- **Reports:** one per person per listing (duplicate gives 409). Admin can remove a listing, which settles all its open reports, or dismiss one report.
+- **Admin:** created by `pnpm admin:create` from `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `.env`, never from code. `requireAdmin` re-checks the role in the database on every request. The admin page has no menu link; the server check is the real lock.
+- **Known limitations:** no email or push notifications, no real-time chat, no user banning (all deferred by the blueprint).

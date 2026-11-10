@@ -55,7 +55,7 @@ as a learning and portfolio project.
 - [x] Phase 4: Auth and Deploy
 - [x] Phase 5: listings and images
 - [x] Phase 6: search, filters, pagination, detail, seller profile
-- [ ] Phase 7
+- [x] Phase 7: mvp-complete
 - [ ] Phase 8
 - [ ] Phase 9
 - [ ] Phase 10
