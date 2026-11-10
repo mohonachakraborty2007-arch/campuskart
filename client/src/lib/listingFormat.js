@@ -1,3 +1,4 @@
+import { resized } from "@/lib/images";
 import { conditionLabels } from "@/lib/categories";
 
 export function formatPrice(price) {
@@ -40,7 +41,7 @@ export function toCardListing(l) {
         category: l.category,
         location: l.pickupSpot || "On campus",
         postedAgo: timeAgo(l.createdAt),
-        image: l.images?.[0]?.url ?? null,
+        image: resized(l.images?.[0]?.url, 600) ?? null,
         sold: l.status === "sold",
     };
 }

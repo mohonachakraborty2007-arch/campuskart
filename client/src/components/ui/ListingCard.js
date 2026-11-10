@@ -1,5 +1,5 @@
 "use client";
-
+import { useState } from "react";
 import Link from "next/link";
 import { useSaved } from "@/components/providers/SavedProvider";
 import { categoryLabel } from "@/lib/categories";
@@ -19,6 +19,7 @@ export default function ListingCard({
     const { isSaved, toggle } = useSaved();
     const saved = isSaved(listing.id);
     const label = categoryLabel(listing.category);
+    const [pop, setPop] = useState(false);
 
     return (
         <article
@@ -36,6 +37,8 @@ export default function ListingCard({
                     <img
                         src={listing.image}
                         alt={listing.title}
+                        loading="lazy"
+                        decoding="async"
                         className="h-full w-full object-cover"
                     />
                 ) : (
@@ -84,6 +87,7 @@ export default function ListingCard({
             <button
                 type="button"
                 onClick={() => {
+                    if (!saved) setPop(true);
                     toggle(listing.id);
                     onSavedChange?.(!saved);
                 }}
@@ -93,7 +97,8 @@ export default function ListingCard({
             >
                 <svg
                     viewBox="0 0 24 24"
-                    className={`h-5 w-5 transition ${saved ? "fill-primary stroke-primary" : "fill-none stroke-foreground"
+                    onAnimationEnd={() => setPop(false)}
+                    className={`h-5 w-5 transition ${pop ? "heart-pop" : ""} ${saved ? "fill-primary stroke-primary" : "fill-none stroke-foreground"
                         }`}
                     strokeWidth="1.8"
                     strokeLinecap="round"

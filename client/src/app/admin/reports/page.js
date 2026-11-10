@@ -1,4 +1,4 @@
-import AdminReports from "@/components/sections/AdminReports";
+import AdminReports from "@/components/sections/AdminReportsView";
 
 export const metadata = { title: "Reports | CampusKart admin" };
 

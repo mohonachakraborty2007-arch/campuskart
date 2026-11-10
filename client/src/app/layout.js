@@ -20,10 +20,31 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata = {
+  metadataBase: new URL(
+    process.env.SITE_URL || "http://localhost:3000"
+  ),
   title: "CampusKart: buy, sell and trade on campus",
   description:
     "A student-only marketplace for used books, electronics, notes and cycles.",
+  applicationName: "CampusKart",
+  icons: { icon: "/logo-icon.png", apple: "/logo-icon.png" },
+  openGraph: {
+    title: "CampusKart: buy, sell and trade on campus",
+    description:
+      "A student-only marketplace for used books, electronics, notes and cycles.",
+    siteName: "CampusKart",
+    type: "website",
+    locale: "en_IN",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "CampusKart: buy, sell and trade on campus",
+    description:
+      "A student-only marketplace for used books, electronics, notes and cycles.",
+  },
 };
+
+export const viewport = { themeColor: "#0a0a10" };
 
 export default function RootLayout({ children }) {
   return (

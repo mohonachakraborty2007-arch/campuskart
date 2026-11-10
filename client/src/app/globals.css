@@ -244,3 +244,32 @@ h4 {
     animation: none;
   }
 }
+
+/* heart pops when you save an item */
+@keyframes heart-pop {
+  0% {
+    scale: 1;
+  }
+
+  40% {
+    scale: 1.35;
+  }
+
+  70% {
+    scale: 0.92;
+  }
+
+  100% {
+    scale: 1;
+  }
+}
+
+.heart-pop {
+  animation: heart-pop 0.35s ease-out;
+}
+
+/* hero cards tilt toward the cursor (set from HeroCards.js) */
+.tilt {
+  transform: perspective(900px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+  transition: transform 0.2s ease-out;
+}

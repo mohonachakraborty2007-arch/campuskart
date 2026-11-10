@@ -11,20 +11,11 @@ import Select from "@/components/ui/Select";
 import Textarea from "@/components/ui/Textarea";
 import Toggle from "@/components/ui/Toggle";
 import { api } from "@/lib/api";
-import { categories } from "@/lib/sampleListings";
-
-// the server accepts these two as well; the tiles elsewhere get them in Phase 6
-const extraCategories = [
-    { slug: "stationery", label: "Stationery & Lab" },
-    { slug: "other", label: "Other" },
-];
+import { allCategories, conditionLabels } from "@/lib/categories";
 
 const categoryOptions = [
     { value: "", label: "Choose a category" },
-    ...[...categories, ...extraCategories].map((c) => ({
-        value: c.slug,
-        label: c.label,
-    })),
+    ...allCategories.map((c) => ({ value: c.slug, label: c.label })),
 ];
 
 const conditionOptions = [
@@ -215,7 +206,7 @@ export default function SellForm({
         title: values.title.trim() || "Your title appears here",
         price: Number(values.price) || 0,
         priceLabel,
-        condition: values.condition || "Good",
+        condition: conditionLabels[values.condition] ?? "Good",
         category: values.category,
         location: values.pickup.trim() || "Pickup spot",
         postedAgo: "Just now",
