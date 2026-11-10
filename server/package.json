@@ -8,7 +8,8 @@
     "start": "node src/index.js",
     "test": "vitest run",
     "seed": "node src/scripts/seed.js",
-    "seed:clear": "node src/scripts/seed.js --clear"
+    "seed:clear": "node src/scripts/seed.js --clear",
+    "admin:create": "node src/scripts/createAdmin.js"
   },
   "keywords": [],
   "author": "",

@@ -3,192 +3,166 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/components/providers/AuthProvider";
-import { useListingStatus } from "@/components/providers/ListingStatusProvider";
 import Alert from "@/components/ui/Alert";
-import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
-import Modal from "@/components/ui/Modal";
-import { getAnyListing } from "@/lib/sampleListings";
-import { sampleReports } from "@/lib/sampleReports";
+import { api } from "@/lib/api";
+import { timeAgo } from "@/lib/listingFormat";
 
-const KEY = "campuskart-reports-resolved";
+const reasonLabels = {
+    spam: "Spam or fake listing",
+    scam: "Scam or suspicious",
+    prohibited: "Prohibited item",
+    "wrong-category": "Wrong category",
+    other: "Something else",
+};
 
-export default function AdminReportsView() {
+export default function AdminReports() {
     const { user, ready } = useAuth();
-    const { setStatus } = useListingStatus();
-    const [resolved, setResolved] = useState([]);
-    const [confirmReport, setConfirmReport] = useState(null);
-    const [notice, setNotice] = useState("");
+    const userId = user?.id ?? null;
+    const [state, setState] = useState({ key: null, reports: [], error: "", code: "" });
+    const [busyId, setBusyId] = useState(null);
+    const [actionError, setActionError] = useState("");
 
     useEffect(() => {
-        try {
-            const raw = localStorage.getItem(KEY);
-            if (raw) setResolved(JSON.parse(raw));
-        } catch {
-            // storage can be blocked; the page still works
-        }
-    }, []);
+        if (!ready || !userId) return;
+        let cancelled = false;
+        api("/admin/reports")
+            .then((data) => {
+                if (!cancelled) setState({ key: userId, reports: data.reports, error: "", code: "" });
+            })
+            .catch((err) => {
+                if (!cancelled) {
+                    setState({ key: userId, reports: [], error: err.message, code: err.code });
+                }
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [ready, userId]);
 
-    function resolve(id) {
-        const next = [...resolved, id];
-        setResolved(next);
+    async function act(report, action) {
+        if (
+            action === "remove-listing" &&
+            !window.confirm(`Remove "${report.listing?.title}" from CampusKart?`)
+        ) {
+            return;
+        }
+        setBusyId(report.id);
+        setActionError("");
         try {
-            localStorage.setItem(KEY, JSON.stringify(next));
-        } catch {
-            // ignore
+            await api(`/admin/reports/${report.id}`, { method: "PATCH", body: { action } });
+            setState((s) => ({
+                ...s,
+                reports: s.reports.filter((r) =>
+                    action === "remove-listing"
+                        ? r.listing?.id !== report.listing?.id
+                        : r.id !== report.id
+                ),
+            }));
+        } catch (err) {
+            setActionError(err.message);
+        } finally {
+            setBusyId(null);
         }
     }
 
-    if (!ready) return null;
+    const loading = !ready || (userId && state.key !== userId);
 
-    if (!user || user.role !== "admin") {
-        return (
+    let body;
+    if (loading) {
+        body = (
+            <p className="py-12 text-center text-muted" aria-live="polite">
+                Loading reports...
+            </p>
+        );
+    } else if (!userId) {
+        body = (
             <EmptyState
-                title="403: you do not have access"
-                action={<Button href="/">Back to home</Button>}
+                title="Log in first"
+                action={<Button href="/login?next=/admin/reports">Log in</Button>}
             >
-                This area is for admins only.
+                This page is for admins.
             </EmptyState>
+        );
+    } else if (state.code === "FORBIDDEN") {
+        body = (
+            <EmptyState title="Admins only" action={<Button href="/">Go home</Button>}>
+                Your account does not have access to this page.
+            </EmptyState>
+        );
+    } else if (state.error) {
+        body = <EmptyState title="Could not load reports">{state.error}</EmptyState>;
+    } else if (state.reports.length === 0) {
+        body = (
+            <EmptyState title="No open reports">Nothing needs your attention right now.</EmptyState>
+        );
+    } else {
+        body = (
+            <ul className="space-y-4">
+                {state.reports.map((r) => (
+                    <li key={r.id} className="rounded-card border border-border bg-surface p-5">
+                        <p className="text-sm text-muted">
+                            {reasonLabels[r.reason] ?? r.reason} · reported by{" "}
+                            {r.reporter?.name ?? "deleted user"} · {timeAgo(r.createdAt)}
+                        </p>
+
+                        {r.listing ? (
+                            <p className="mt-2">
+                                <Link
+                                    href={`/listings/${r.listing.id}`}
+                                    className="font-bold text-accent underline-offset-4 hover:underline"
+                                >
+                                    {r.listing.title}
+                                </Link>
+                                {r.listing.seller && (
+                                    <span className="text-muted"> · seller {r.listing.seller.name}</span>
+                                )}
+                            </p>
+                        ) : (
+                            <p className="mt-2 text-muted">Listing no longer exists.</p>
+                        )}
+
+                        {/* plain text only: React escapes it */}
+                        {r.details && <p className="mt-3 whitespace-pre-line">{r.details}</p>}
+
+                        <div className="mt-4 flex flex-wrap gap-3">
+                            <Button
+                                size="sm"
+                                loading={busyId === r.id}
+                                onClick={() => act(r, "remove-listing")}
+                            >
+                                Remove listing
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="secondary"
+                                loading={busyId === r.id}
+                                onClick={() => act(r, "dismiss")}
+                            >
+                                Dismiss
+                            </Button>
+                        </div>
+                    </li>
+                ))}
+            </ul>
         );
     }
 
-    const open = sampleReports.filter((r) => !resolved.includes(r.id));
-    const confirmListing = confirmReport
-        ? getAnyListing(confirmReport.listingId)
-        : null;
-
     return (
         <div>
-            <h1 className="flex items-center gap-3 text-3xl font-bold md:text-4xl">
-                Reports
-                <span
-                    aria-live="polite"
-                    className="rounded-full bg-surface-2 px-3 py-1 font-sans text-base font-medium text-muted"
-                >
-                    {open.length} open
-                </span>
-            </h1>
-            <p className="mt-2 text-muted">
-                Review reported listings. Remove the listing or dismiss the report.
-            </p>
+            <h1 className="text-3xl font-bold md:text-4xl">Reports</h1>
+            <p className="mt-2 text-muted">Open reports, newest first.</p>
 
-            {notice && (
-                <Alert tone="success" className="mt-6">
-                    {notice}
-                </Alert>
+            {actionError && (
+                <div className="mt-6">
+                    <Alert tone="error" title="That did not work.">
+                        {actionError}
+                    </Alert>
+                </div>
             )}
 
-            <div className="mt-8">
-                {open.length === 0 ? (
-                    <EmptyState title="No open reports">
-                        Everything has been reviewed. Nice work.
-                    </EmptyState>
-                ) : (
-                    <div className="overflow-x-auto rounded-card border border-border bg-surface">
-                        <table className="w-full min-w-[760px] text-left text-sm">
-                            <caption className="sr-only">Open listing reports</caption>
-                            <thead className="border-b border-border text-muted">
-                                <tr>
-                                    <th scope="col" className="px-5 py-3 font-medium">
-                                        Listing
-                                    </th>
-                                    <th scope="col" className="px-5 py-3 font-medium">
-                                        Reason
-                                    </th>
-                                    <th scope="col" className="px-5 py-3 font-medium">
-                                        Reported by
-                                    </th>
-                                    <th scope="col" className="px-5 py-3 font-medium">
-                                        Date
-                                    </th>
-                                    <th scope="col" className="px-5 py-3 font-medium">
-                                        Actions
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-border">
-                                {open.map((r) => {
-                                    const listing = getAnyListing(r.listingId);
-                                    return (
-                                        <tr key={r.id}>
-                                            <td className="px-5 py-4">
-                                                {listing ? (
-                                                    <Link
-                                                        href={`/listings/${listing.id}`}
-                                                        className="font-medium hover:text-accent"
-                                                    >
-                                                        {listing.title}
-                                                    </Link>
-                                                ) : (
-                                                    <span className="text-muted line-through">
-                                                        Listing removed
-                                                    </span>
-                                                )}
-                                            </td>
-                                            <td className="px-5 py-4">
-                                                <Badge tone="warning">{r.reason}</Badge>
-                                            </td>
-                                            <td className="px-5 py-4 text-muted">{r.reporter}</td>
-                                            <td className="px-5 py-4 text-muted">{r.date}</td>
-                                            <td className="px-5 py-4">
-                                                <div className="flex flex-wrap gap-2">
-                                                    <Button
-                                                        size="sm"
-                                                        variant="secondary"
-                                                        onClick={() => {
-                                                            resolve(r.id);
-                                                            setNotice("Report dismissed.");
-                                                        }}
-                                                    >
-                                                        Dismiss
-                                                    </Button>
-                                                    {listing && (
-                                                        <Button
-                                                            size="sm"
-                                                            variant="danger"
-                                                            onClick={() => setConfirmReport(r)}
-                                                        >
-                                                            Remove listing
-                                                        </Button>
-                                                    )}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-            </div>
-
-            <Modal
-                open={Boolean(confirmReport)}
-                onClose={() => setConfirmReport(null)}
-                title="Remove this listing?"
-            >
-                <p className="text-muted">
-                    &ldquo;{confirmListing?.title}&rdquo; will disappear from Browse and
-                    the report will be closed.
-                </p>
-                <div className="mt-6 flex gap-3">
-                    <Button
-                        variant="danger"
-                        onClick={() => {
-                            setStatus(confirmReport.listingId, "removed");
-                            resolve(confirmReport.id);
-                            setNotice(`"${confirmListing?.title}" was removed.`);
-                            setConfirmReport(null);
-                        }}
-                    >
-                        Remove
-                    </Button>
-                    <Button variant="ghost" onClick={() => setConfirmReport(null)}>
-                        Cancel
-                    </Button>
-                </div>
-            </Modal>
+            <div className="mt-8">{body}</div>
         </div>
     );
 }

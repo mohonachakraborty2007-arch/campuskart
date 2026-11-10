@@ -1,3 +1,4 @@
+import { createReport } from '../controllers/reports.js';
 import { createInquiry } from '../controllers/inquiries.js';
 import { inquiryLimiter } from '../middleware/inquiryLimiter.js';
 import { Router } from 'express';
@@ -23,6 +24,7 @@ router.get('/:id', optionalAuth, getListing);
 // private: log in first, then verified, then read the photos, then validate the text
 router.post('/', auth, requireVerified, uploadImages, validate(createListingSchema), createListing);
 router.post('/:id/inquiries', auth, requireVerified, inquiryLimiter, createInquiry);
+router.post('/:id/reports', auth, requireVerified, createReport);
 router.patch('/:id', auth, requireVerified, uploadImages, validate(updateListingSchema), updateListing);
 router.delete('/:id', auth, requireVerified, removeListing);
 router.patch('/:id/sold', auth, requireVerified, toggleSold);

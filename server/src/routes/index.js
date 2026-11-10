@@ -4,6 +4,7 @@ import listingRoutes from './listings.js';
 import userRoutes from './users.js';
 import wishlistRoutes from './wishlist.js';
 import inquiryRoutes from './inquiries.js';
+import adminRoutes from './admin.js';
 
 const router = Router();
 
@@ -16,5 +17,6 @@ router.use('/listings', listingRoutes);
 router.use('/users', userRoutes);
 router.use('/wishlist', wishlistRoutes);
 router.use('/inquiries', inquiryRoutes);
+router.use('/admin', adminRoutes);
 
 export default router;
