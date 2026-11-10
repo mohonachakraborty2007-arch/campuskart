@@ -21,12 +21,16 @@ export function createVerifyToken() {
 }
 
 export function signSession(userId) {
-    return jwt.sign({ sub: String(userId) }, env.JWT_SECRET, { expiresIn: '7d' });
+    return jwt.sign({ sub: String(userId) }, env.JWT_SECRET, {
+        expiresIn: '7d',
+        algorithm: 'HS256',
+    });
 }
 
 export function verifySession(token) {
-    return jwt.verify(token, env.JWT_SECRET);
+    return jwt.verify(token, env.JWT_SECRET, { algorithms: ['HS256'] });
 }
+
 
 export function cookieOptions() {
     return {
