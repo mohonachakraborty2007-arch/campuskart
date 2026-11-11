@@ -65,3 +65,29 @@
 - **The home ticker** shows real listings and hides itself with fewer than 3.
 - **Share previews:** Next.js generates the social image (`opengraph-image.js`). `SITE_URL` is set in Vercel.
 - **Lighthouse:** 100 on the home page, `/listings` and a listing detail.
+# Known issues and limits
+
+Checks done so far catch common mistakes. They do not prove the app is secure, and there has been no independent security review.
+
+## Must fix before real students (release blockers)
+- Email provider (Resend) not added yet. Until then, verification links are printed in server logs.
+- Seed/demo data still in the shared database. Run `pnpm seed:clear`.
+- Rate-limit behind Vercel proxy: result of live test pending.
+
+## Later
+- Registering with an existing email reveals that it is registered (common trade-off).
+- No password reset, account lockout or 2FA.
+- Login sessions last 7 days and cannot be revoked from the server.
+- No Content-Security-Policy yet (basic security headers are set).
+- `minimatch` (dev tool via eslint-config-next) has a moderate advisory. Not shipped to users.
+- No account deletion or data export.
+- Local development and the live site share one Atlas database.
+- Search matches whole words only.
+- The free Render instance sleeps after 15 minutes of inactivity; the first request afterwards can fail or take ~50 seconds. Consider a keep-alive ping or a paid instance.
+## Must fix before real students (release blockers)
+- Email provider (Resend) not added yet. Until then, verification links are printed in server logs.
+- Seed/demo data still in the shared database. Run `pnpm seed:clear`.
+
+## Later
+- Login rate limit is per internet address only (10 tries per 15 minutes, verified live). No per-account limit, so a distributed guessing attack is not blocked.
+- The free Render instance sleeps after 15 minutes of inactivity; the first request afterwards can fail or take ~50 seconds. Consider a keep-alive ping or a paid instance.
