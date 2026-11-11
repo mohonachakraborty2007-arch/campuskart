@@ -57,7 +57,7 @@ as a learning and portfolio project.
 - [x] Phase 6: search, filters, pagination, detail, seller profile
 - [x] Phase 7: mvp-complete
 - [x] Phase 8: style: polish, motion, accessibility, states
-- [ ] Phase 9
+- [x] Phase 9:Testing and security hardening
 - [ ] Phase 10
 
 ## Working rules for AI assistants

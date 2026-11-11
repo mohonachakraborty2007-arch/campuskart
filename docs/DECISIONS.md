@@ -91,3 +91,14 @@ Checks done so far catch common mistakes. They do not prove the app is secure, a
 ## Later
 - Login rate limit is per internet address only (10 tries per 15 minutes, verified live). No per-account limit, so a distributed guessing attack is not blocked.
 - The free Render instance sleeps after 15 minutes of inactivity; the first request afterwards can fail or take ~50 seconds. Consider a keep-alive ping or a paid instance.
+
+## Phase 9: Testing and security hardening
+
+- **Tests:** 75 server tests pass. They cover permissions on every write route (logged-out requests get 401, non-admins get 403, non-owners get 403), query-injection and mass-assignment attempts, upload type/size/count checks, duplicate reports and the cookie flags.
+- **Manual checks done on the live site:** cookie flags (HttpOnly, Secure, SameSite=Lax), security headers on both Vercel and the API, and the login rate limit behind the Vercel to Render proxy (each internet address gets its own counter).
+- **Secrets:** search of the repo and Git history found none. Demo logins file (`authDemo.js`) deleted. `JWT_SECRET` differs between local and Render.
+- **Database access:** the app uses a dedicated user (`campuskart_app`) limited to the `campuskart` and `campuskart_test` databases. The old `readWriteAnyDatabase` user was deleted.
+- **Hardening applied:** JWT algorithm pinned to HS256; security headers added to the Vercel site (`X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`); powered-by header removed.
+- **Dependencies:** server audit clean. Client audit has one moderate advisory (`minimatch`, via a dev-only tool, not shipped to users); left alone on purpose, since forcing updates the night before launch is riskier.
+- **Not done / known limits** (see `docs/KNOWN_ISSUES.md`): no Resend email provider yet, demo data still in the shared database, per-address login limit only, Render free instance sleeps, no password reset or 2FA, no Content-Security-Policy on the client.
+- **These checks catch common mistakes. They do not prove the app is secure, and there has been no independent security review.**
