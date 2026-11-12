@@ -43,3 +43,4 @@ None. Both earlier blockers are closed:
 - Password reset by email
 - Per-account login limiter and Content-Security-Policy
 - Keep-alive ping for the Render server
+- **Render free tier sleeps** after 15 minutes without visitors. This is mitigated with a free UptimeRobot ping to `/api/health` every 5 minutes. If the monitor is ever paused or removed, first requests can take up to ~50 seconds again.

@@ -135,7 +135,7 @@ An honest list — details in [`docs/KNOWN_ISSUES.md`](docs/KNOWN_ISSUES.md):
 - No password reset, account lockout or 2FA yet
 - Sessions last 7 days and can't be revoked early
 - No Content-Security-Policy yet · search matches whole words only
-
+- The free API server can sleep when idle; a free UptimeRobot ping every 5 minutes keeps it awake, but a cold start can still take up to ~50 seconds
 ## 🗺️ Roadmap
 
 - [ ] Custom domain with authenticated email
