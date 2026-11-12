@@ -57,8 +57,8 @@ as a learning and portfolio project.
 - [x] Phase 6: search, filters, pagination, detail, seller profile
 - [x] Phase 7: mvp-complete
 - [x] Phase 8: style: polish, motion, accessibility, states
-- [x] Phase 9:Testing and security hardening
-- [ ] Phase 10
+- [x] Phase 9: Testing and security hardening
+- [x] Phase 10: Production deployment and verification (live at https://campuskart-vert.vercel.app, v1.0.0)
 
 ## Working rules for AI assistants
 - Read this file and inspect the files you will touch first. Do not guess.

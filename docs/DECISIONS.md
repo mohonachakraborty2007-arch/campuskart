@@ -102,3 +102,41 @@ Checks done so far catch common mistakes. They do not prove the app is secure, a
 - **Dependencies:** server audit clean. Client audit has one moderate advisory (`minimatch`, via a dev-only tool, not shipped to users); left alone on purpose, since forcing updates the night before launch is riskier.
 - **Not done / known limits** (see `docs/KNOWN_ISSUES.md`): no Resend email provider yet, demo data still in the shared database, per-address login limit only, Render free instance sleeps, no password reset or 2FA, no Content-Security-Policy on the client.
 - **These checks catch common mistakes. They do not prove the app is secure, and there has been no independent security review.**
+
+## Phase 10 — Production deployment and verification (done)
+
+**Live site:** https://campuskart-vert.vercel.app
+**Release:** v1.0.0
+
+### Production setup
+| Part | Service | Notes |
+|---|---|---|
+| Site | Vercel | Env: `API_ORIGIN`, `SITE_URL` |
+| API | Render (free) | https://campuskart-api-ejoi.onrender.com, `NODE_ENV=production` |
+| Database | MongoDB Atlas (free) | DB `campuskart`; least-privilege user `campuskart_app` |
+| Images | Cloudinary | Keys set on Render |
+| Email | Brevo (free, HTTP API) | `EMAIL_API_KEY`, `EMAIL_FROM` set on Render |
+
+The browser talks only to the Vercel site. Next.js rewrites `/api/*` to the Render API, so the login cookie is same-origin.
+
+### Verified in production
+- Register with a college email: verification email arrived in the inbox, link works
+- Login cookie: HttpOnly, Secure, SameSite=Lax
+- Admin account works live, including on mobile data
+- Demo data removed with `pnpm seed:clear`
+- 75 automated tests pass; dependency audit clean at release
+- Verification links are never printed in production logs
+
+### What changed in this phase
+- `server/src/services/email.js`: sends through Brevo; in production a missing key throws instead of logging a link
+- `server/src/config/env.js`: neutral `EMAIL_FROM` default
+- README rewritten: live link, architecture diagram, security notes, limits
+- `docs/DECISIONS.md` and `docs/KNOWN_ISSUES.md` updated
+
+### Still open (see docs/KNOWN_ISSUES.md)
+- Render free tier sleeps when idle
+- Emails sent from a personal address may land in spam
+- No password reset, lockout or 2FA; no Content-Security-Policy
+
+### Next
+Phase 11 — post-launch: real users, feedback, fixes, optional domain.
